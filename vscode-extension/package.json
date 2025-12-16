@@ -1,0 +1,43 @@
+{
+  "name": "vscode-file-sync",
+  "displayName": "File Sync",
+  "description": "Sync files with backend server",
+  "version": "1.0.0",
+  "publisher": "Nirodev",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscode-file-sync.syncProject",
+        "title": "Sync Project"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "vscode-file-sync.syncProject",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "echo 'Compilation not needed for JS'",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.60.0"
+  }
+}

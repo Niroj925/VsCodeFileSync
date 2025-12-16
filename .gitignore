@@ -1,0 +1,99 @@
+# ===============================
+# Node.js (Backend & Frontend)
+# ===============================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# ===============================
+# Build outputs
+# ===============================
+dist/
+build/
+out/
+coverage/
+.tmp/
+.cache/
+
+# ===============================
+# Environment files
+# ===============================
+.env
+.env.*
+!.env.example
+
+# ===============================
+# Logs
+# ===============================
+logs/
+*.log
+
+# ===============================
+# OS files
+# ===============================
+.DS_Store
+Thumbs.db
+
+# ===============================
+# VS Code
+# ===============================
+.vscode/
+*.vsix
+
+# ===============================
+# VS Code Extension
+# ===============================
+out/
+*.map
+.vscode-test/
+
+# ===============================
+# Frontend frameworks
+# ===============================
+.next/
+.nuxt/
+.svelte-kit/
+.vite/
+.angular/
+
+# ===============================
+# TypeScript
+# ===============================
+*.tsbuildinfo
+
+# ===============================
+# IDEs
+# ===============================
+.idea/
+*.iml
+
+# ===============================
+# Temporary / backups
+# ===============================
+*.swp
+*.bak
+*.tmp
+
+# ===============================
+# Package manager lock overrides
+# ===============================
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ===============================
+# LLM / AI artifacts (optional)
+# ===============================
+.vector_cache/
+.embeddings/
+.llm_cache/
+
+# ===============================
+# Local databases
+# ===============================
+data/
+db/
+sqlite.db
