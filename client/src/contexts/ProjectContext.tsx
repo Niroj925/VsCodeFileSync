@@ -1,9 +1,9 @@
-import React, { createContext, useState, useContext, useCallback, useRef } from 'react';
+import React, { createContext, useState, useContext, useCallback, useRef, useEffect } from 'react';
 import debounce from 'lodash.debounce';
 import { useProjects } from '../hooks/useProjects';
 import { useFileSearch } from '../hooks/useFileSearch';
 import { useStats } from '../hooks/useStats';
-import type { FileContent, Project, SearchResult } from '../types';
+import type { FileContent, FileTreeNode, Project, SearchResult } from '../types';
 
 interface ProjectContextType {
   // State
@@ -17,7 +17,7 @@ interface ProjectContextType {
   copied: boolean;
   stats: ReturnType<typeof useStats>['stats'];
   loading: boolean;
-  
+
   // Actions
   setSelectedProject: React.Dispatch<React.SetStateAction<string>>;
   setSelectedFile: React.Dispatch<React.SetStateAction<FileContent | null>>;
@@ -25,7 +25,7 @@ interface ProjectContextType {
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setIsSyncing: React.Dispatch<React.SetStateAction<boolean>>;
   setCopied: React.Dispatch<React.SetStateAction<boolean>>;
-  
+
   // Functions
   loadProjects: () => Promise<Project[]>;
   handleProjectSelect: (projectName: string) => void;
@@ -36,105 +36,101 @@ interface ProjectContextType {
   loadProjectFiles: (projectName: string) => Promise<SearchResult[]>;
   debouncedLoadProjects: () => void;
   debouncedLoadStats: () => void;
+
+  fileTree: Record<string, FileTreeNode>;
+  expandedFolders: Set<string>;
+  toggleFolder: (path: string) => void;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
 export const useProjectContext = (): ProjectContextType => {
   const context = useContext(ProjectContext);
-  if (!context) {
-    throw new Error('useProjectContext must be used within ProjectProvider');
-  }
+  if (!context) throw new Error('useProjectContext must be used within ProjectProvider');
   return context;
 };
 
 export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [selectedProject, setSelectedProject] = useState<string>('');
+  const [selectedProject, setSelectedProject] = useState('');
   const [selectedFile, setSelectedFile] = useState<FileContent | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  const [copied, setCopied] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const {
-    projects,
-    loading: projectsLoading,
-    loadProjects: originalLoadProjects,
-    loadProjectFiles: originalLoadProjectFiles
-  } = useProjects();
+  const [fileTree, setFileTree] = useState<Record<string, FileTreeNode>>({});
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
-  const {
-    searchResults,
-    loading: searchLoading,
-    searchFiles,
-    loadFileContent,
-    setSearchResults
-  } = useFileSearch();
-
+  const { projects, loading: projectsLoading, loadProjects: originalLoadProjects, loadProjectFiles: originalLoadProjectFiles } = useProjects();
+  const { searchResults, loading: searchLoading, searchFiles, loadFileContent, setSearchResults } = useFileSearch();
   const { stats, calculateStats } = useStats(projects);
 
-  // Create debounced versions
+  // Debounced functions
   const debouncedLoadProjects = useRef(
-    debounce(async () => {
-      await originalLoadProjects();
-    }, 300)
+    debounce(async () => { await originalLoadProjects(); }, 300)
   ).current;
 
   const debouncedLoadStats = useRef(
-    debounce(() => {
-      calculateStats();
-    }, 300)
+    debounce(() => calculateStats(), 300)
   ).current;
+
+  // Build file tree
+  const buildFileTree = useCallback((files: SearchResult[], projectName: string): FileTreeNode => {
+    const root: FileTreeNode = { name: projectName, type: 'folder', path: '', project: projectName, children: {} };
+    files.forEach(file => {
+      const parts = file.path.split('/');
+      let current = root;
+      parts.forEach((part, index) => {
+        const isFile = index === parts.length - 1;
+        if (!current.children![part]) {
+          current.children![part] = { name: part, type: isFile ? 'file' : 'folder', path: parts.slice(0, index + 1).join('/'), project: projectName, children: isFile ? undefined : {} };
+        }
+        if (!isFile) current = current.children![part];
+      });
+    });
+    return root;
+  }, []);
 
   const handleProjectSelect = useCallback(async (projectName: string) => {
     setSelectedProject(projectName);
+
     try {
       const files = await originalLoadProjectFiles(projectName);
-      const formattedFiles: SearchResult[] = files.map(file => ({
-        project: projectName,
-        path: file.path,
-        size: file.size,
-        lastModified: file.lastModified
-      }));
+      const formattedFiles = files.map(f => ({ project: projectName, path: f.path, size: f.size, lastModified: f.lastModified }));
       setSearchResults(formattedFiles);
-    } catch (error) {
-      console.error('Failed to load project files:', error);
+
+      const tree = buildFileTree(formattedFiles, projectName);
+      setFileTree(prev => ({ ...prev, [projectName]: tree }));
+
+      // Auto-expand first level
+      setExpandedFolders(new Set(Object.keys(tree.children || {}).map(key => `${projectName}/${key}`)));
+    } catch (err) {
+      console.error(err);
     }
-  }, [originalLoadProjectFiles, setSearchResults]);
+  }, [originalLoadProjectFiles, setSearchResults, buildFileTree]);
 
   const handleFileSelect = useCallback(async (project: string, filePath: string) => {
     try {
       const file = await loadFileContent(project, filePath);
-      setSelectedFile({
-        ...file,
-        project,
-        filePath
-      });
-    } catch (error) {
-      console.error('Failed to load file:', error);
+      setSelectedFile({ ...file, project, filePath });
+    } catch (err) {
+      console.error(err);
     }
   }, [loadFileContent]);
 
   const handleSearch = useCallback(async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!searchQuery.trim()) {
-      if (selectedProject) {
-        handleProjectSelect(selectedProject);
-      }
+      if (selectedProject) handleProjectSelect(selectedProject);
       return;
     }
     await searchFiles(searchQuery, selectedProject);
   }, [searchQuery, selectedProject, searchFiles, handleProjectSelect]);
 
-  const handleSyncProject = useCallback(async () => {
+  const handleSyncProject = useCallback(() => {
     setIsSyncing(true);
-    try {
-      alert('Please use the VS Code extension to sync your project.\n\n1. Open your project in VS Code\n2. Right-click on the src folder\n3. Select "Sync File"');
-    } catch (error) {
-      console.error('Sync failed:', error);
-    } finally {
-      setIsSyncing(false);
-    }
+    alert('Use VS Code extension to sync:\n1. Open project\n2. Right-click src folder\n3. Select "Sync File"');
+    setIsSyncing(false);
   }, []);
 
   const copyToClipboard = useCallback((text: string) => {
@@ -146,25 +142,31 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const loadProjectFiles = useCallback(async (projectName: string): Promise<SearchResult[]> => {
     try {
       const files = await originalLoadProjectFiles(projectName);
-      return files.map(file => ({
-        project: projectName,
-        path: file.path,
-        size: file.size,
-        lastModified: file.lastModified
-      }));
-    } catch (error) {
-      console.error('Failed to load project files:', error);
+      return files.map(f => ({ project: projectName, path: f.path, size: f.size, lastModified: f.lastModified }));
+    } catch (err) {
+      console.error(err);
       return [];
     }
   }, [originalLoadProjectFiles]);
 
-  // Calculate stats when projects change
-  React.useEffect(() => {
-    calculateStats();
-  }, [projects, calculateStats]);
+  const toggleFolder = useCallback((path: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      next.has(path) ? next.delete(path) : next.add(path);
+      return next;
+    });
+  }, []);
+
+  // Auto-select first project when projects load
+  useEffect(() => {
+    if (projects.length > 0 && !selectedProject) {
+      handleProjectSelect(projects[0].name);
+    }
+  }, [projects, selectedProject, handleProjectSelect]);
+
+  useEffect(() => { calculateStats(); }, [projects, calculateStats]);
 
   const value: ProjectContextType = {
-    // State
     projects,
     selectedProject,
     selectedFile,
@@ -175,16 +177,14 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     copied,
     stats,
     loading: projectsLoading || searchLoading,
-    
-    // Actions
+
     setSelectedProject,
     setSelectedFile,
     setSearchQuery,
     setSidebarOpen,
     setIsSyncing,
     setCopied,
-    
-    // Functions
+
     loadProjects: originalLoadProjects,
     handleProjectSelect,
     handleFileSelect,
@@ -193,12 +193,12 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     copyToClipboard,
     loadProjectFiles,
     debouncedLoadProjects: debouncedLoadProjects as any,
-    debouncedLoadStats: debouncedLoadStats as any
+    debouncedLoadStats: debouncedLoadStats as any,
+
+    fileTree,
+    expandedFolders,
+    toggleFolder
   };
 
-  return (
-    <ProjectContext.Provider value={value}>
-      {children}
-    </ProjectContext.Provider>
-  );
+  return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;
 };

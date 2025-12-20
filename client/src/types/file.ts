@@ -26,3 +26,11 @@ export interface FileMetadata {
   project: string;
   filePath: string;
 }
+
+export interface FileTreeNode {
+  name: string;
+  type: 'file' | 'folder';
+  path: string;
+  project: string;
+  children?: Record<string, FileTreeNode>;
+}

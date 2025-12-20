@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { FileText, Hash, Clock, Folder, X, Copy, Check } from 'lucide-react';
+import { Hash, Clock, Folder, Copy, Check } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { formatFileSize, formatDate } from '../../utils/formatters';
 import { getFileIcon } from '../../utils/fileUtils';
@@ -7,16 +7,12 @@ import { getFileIcon } from '../../utils/fileUtils';
 const FileViewer: React.FC = () => {
   const {
     selectedFile,
-    setSelectedFile,
     copied,
     copyToClipboard
   } = useProjectContext();
 
   const fileContentRef = useRef<HTMLDivElement>(null);
 
-  const handleClose = () => {
-    setSelectedFile(null);
-  };
 
   if (!selectedFile) return null;
 

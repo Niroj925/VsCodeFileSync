@@ -1,17 +1,25 @@
 import React from 'react';
-import { useProjectContext } from '../../contexts/ProjectContext';
-import ProjectList from '../projects/ProjectList';
-import ProjectStats from '../projects/ProjectStats';
+import SidebarFileTree from '../projects/SidebarFileTree';
+import SidebarSearch from '../files/SideBarSearch';
+import SidebarSearchResults from '../files/SideBarSearchResult';
 
 const Sidebar: React.FC = () => {
-  const { sidebarOpen } = useProjectContext();
-  if (!sidebarOpen) return null;
-
   return (
-    <div className="lg:w-80 flex-shrink-0">
-      <ProjectList />
-      <ProjectStats />
-    </div>
+    <aside className="w-72 h-full border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex flex-col">
+      
+     
+
+      <SidebarSearch />
+
+      <SidebarSearchResults />
+ <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        Explorer
+      </div>
+      <div className="flex-1 overflow-y-auto px-2">
+        <SidebarFileTree />
+      </div>
+
+    </aside>
   );
 };
 
