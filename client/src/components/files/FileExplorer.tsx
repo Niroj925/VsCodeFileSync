@@ -1,17 +1,34 @@
-import React from "react";
+import React, { useState } from "react";
 import { FileText, X, Copy, Check } from "lucide-react";
 import { useProjectContext } from "../../contexts/ProjectContext";
 import FileViewer from "./FileViewer";
-import ChatBox from "../chat/ChatBox";
+import ChatBox, { type Message } from "../chat/ChatBox";
+import ChatInput from "../chat/ChatInput";
+
+const STATIC_REPLY = "This is a static response from the assistant.";
 
 const FileExplorer: React.FC = () => {
-  const {
-    selectedFile,
-    searchResults,
-    copied,
-    copyToClipboard,
-    setSelectedFile,
-  } = useProjectContext();
+  const { selectedFile, searchResults, copied, copyToClipboard, setSelectedFile, selectedItems } =
+    useProjectContext();
+
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  // Send message
+  const handleSend = (text: string) => {
+    if (!text.trim() && selectedItems.length === 0) return;
+
+    const message =
+      text +
+      (selectedItems.length
+        ? "\n\nFiles:\n" + selectedItems.map((i) => `- ${i.path}`).join("\n")
+        : "");
+
+    setMessages((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), role: "user", content: message },
+      { id: crypto.randomUUID(), role: "assistant", content: STATIC_REPLY },
+    ]);
+  };
 
   return (
     <div className="glass-card rounded-xl flex flex-col h-full overflow-hidden">
@@ -52,16 +69,21 @@ const FileExplorer: React.FC = () => {
       {/* ================= Content ================= */}
       <div className="flex-1 overflow-hidden">
         {selectedFile ? (
-          <div className="h-full">
-            <FileViewer />
-          </div>
+          <FileViewer />
         ) : (
-          // ChatBox handles messages + selected items internally
-          <div className="h-full overflow-y-auto">
-            <ChatBox />
+          <div className="h-full flex flex-col">
+            <ChatBox messages={messages} />
           </div>
         )}
+    
       </div>
+
+          <div>
+              <ChatInput
+              onSend={handleSend}
+              // onRemoveItem={removeItem}
+            />
+        </div>
     </div>
   );
 };

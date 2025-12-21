@@ -1,35 +1,24 @@
-import React, { useState, useRef, useEffect } from "react";
-import ChatInput from "./ChatInput";
+import React, { useRef, useEffect } from "react";
 
-interface Message {
+export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
 }
 
-const STATIC_REPLY = "This is a static response from the assistant.";
+interface Props {
+  messages: Message[];
+}
 
-const ChatBox: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+const ChatBox: React.FC<Props> = ({ messages }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Send message
-  const handleSend = (text: string) => {
-    setMessages((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), role: "user", content: text },
-      { id: crypto.randomUUID(), role: "assistant", content: STATIC_REPLY },
-    ]);
-  };
-
   return (
     <div className="h-full flex flex-col">
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
         {messages.map((msg) => (
           <div
@@ -45,9 +34,6 @@ const ChatBox: React.FC = () => {
         ))}
         <div ref={messagesEndRef} />
       </div>
-
-      {/* Chat input uses context for selected files */}
-      <ChatInput onSend={handleSend} />
     </div>
   );
 };
