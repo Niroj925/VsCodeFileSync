@@ -15,6 +15,7 @@ import type {
   FileTreeNode,
   Project,
   SearchResult,
+  SelectedItem,
 } from "../types";
 
 interface ProjectContextType {
@@ -54,6 +55,10 @@ interface ProjectContextType {
 
   socketConnected: boolean;
   setSocketConnected: React.Dispatch<React.SetStateAction<boolean>>;
+
+  selectedItems: SelectedItem[];
+  addItem: (item: SelectedItem) => void;
+  removeItem: (item: SelectedItem) => void;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -140,68 +145,39 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     []
   );
 
-  // const handleProjectSelect = useCallback(
-  //   async (projectName: string) => {
-  //     setSelectedProject(projectName);
-
-  //     try {
-  //       const files = await originalLoadProjectFiles(projectName);
-  //       const formattedFiles = files.map((f) => ({
-  //         project: projectName,
-  //         path: f.path,
-  //         size: f.size,
-  //         lastModified: f.lastModified,
-  //       }));
-  //       setSearchResults(formattedFiles);
-
-  //       const tree = buildFileTree(formattedFiles, projectName);
-  //       setFileTree((prev) => ({ ...prev, [projectName]: tree }));
-
-  //       // Auto-expand first level
-  //       setExpandedFolders(
-  //         new Set(
-  //           Object.keys(tree.children || {}).map(
-  //             (key) => `${projectName}/${key}`
-  //           )
-  //         )
-  //       );
-  //     } catch (err) {
-  //       console.error(err);
-  //     }
-  //   },
-  //   [originalLoadProjectFiles, setSearchResults, buildFileTree]
-  // );
-
   const handleProjectSelect = useCallback(
-  async (projectName: string) => {
-    setSelectedProject(projectName);
+    async (projectName: string) => {
+      setSelectedProject(projectName);
 
-    try {
-      const files = await originalLoadProjectFiles(projectName);
-      // now add type
-      const formattedFiles: SearchResult[] = files.map((f) => ({
-        project: projectName,
-        path: f.path,
-        size: f.size,
-        lastModified: f.lastModified,
-        type: f.path.endsWith("/") ? "folder" : "file", // basic detection
-      }));
-      setSearchResults(formattedFiles);
+      try {
+        const files = await originalLoadProjectFiles(projectName);
+        // now add type
+        const formattedFiles: SearchResult[] = files.map((f) => ({
+          project: projectName,
+          path: f.path,
+          size: f.size,
+          lastModified: f.lastModified,
+          type: f.path.endsWith("/") ? "folder" : "file", // basic detection
+        }));
+        setSearchResults(formattedFiles);
 
-      const tree = buildFileTree(formattedFiles, projectName);
-      setFileTree((prev) => ({ ...prev, [projectName]: tree }));
+        const tree = buildFileTree(formattedFiles, projectName);
+        setFileTree((prev) => ({ ...prev, [projectName]: tree }));
 
-      // Auto-expand first level
-      setExpandedFolders(
-        new Set(Object.keys(tree.children || {}).map((key) => `${projectName}/${key}`))
-      );
-    } catch (err) {
-      console.error(err);
-    }
-  },
-  [originalLoadProjectFiles, setSearchResults, buildFileTree]
-);
-
+        // Auto-expand first level
+        setExpandedFolders(
+          new Set(
+            Object.keys(tree.children || {}).map(
+              (key) => `${projectName}/${key}`
+            )
+          )
+        );
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    [originalLoadProjectFiles, setSearchResults, buildFileTree]
+  );
 
   const handleFileSelect = useCallback(
     async (project: string, filePath: string) => {
@@ -233,44 +209,25 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     setTimeout(() => setCopied(false), 2000);
   }, []);
 
-  // const loadProjectFiles = useCallback(
-  //   async (projectName: string): Promise<SearchResult[]> => {
-  //     try {
-  //       const files = await originalLoadProjectFiles(projectName);
-  //       return files.map((f) => ({
-  //         project: projectName,
-  //         path: f.path,
-  //         size: f.size,
-  //         lastModified: f.lastModified,
-  //       }));
-  //     } catch (err) {
-  //       console.error(err);
-  //       return [];
-  //     }
-  //   },
-  //   [originalLoadProjectFiles]
-  // );
-
   const loadProjectFiles = useCallback(
-  async (projectName: string): Promise<SearchResult[]> => {
-    try {
-      const files = await originalLoadProjectFiles(projectName);
+    async (projectName: string): Promise<SearchResult[]> => {
+      try {
+        const files = await originalLoadProjectFiles(projectName);
 
-      return files.map((f) => ({
-        project: projectName,
-        path: f.path,
-        size: f.size,
-        lastModified: f.lastModified,
-        type: f.path.endsWith("/") ? "folder" : "file",
-      }));
-    } catch (err) {
-      console.error(err);
-      return [];
-    }
-  },
-  [originalLoadProjectFiles]
-);
-
+        return files.map((f) => ({
+          project: projectName,
+          path: f.path,
+          size: f.size,
+          lastModified: f.lastModified,
+          type: f.path.endsWith("/") ? "folder" : "file",
+        }));
+      } catch (err) {
+        console.error(err);
+        return [];
+      }
+    },
+    [originalLoadProjectFiles]
+  );
 
   const toggleFolder = useCallback((path: string) => {
     setExpandedFolders((prev) => {
@@ -278,6 +235,22 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
       next.has(path) ? next.delete(path) : next.add(path);
       return next;
     });
+  }, []);
+
+  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+
+  const addItem = useCallback((item: SelectedItem) => {
+    setSelectedItems((prev) =>
+      prev.some((i) => i.project === item.project && i.path === item.path)
+        ? prev
+        : [...prev, item]
+    );
+  }, []);
+
+  const removeItem = useCallback((item: SelectedItem) => {
+    setSelectedItems((prev) =>
+      prev.filter((i) => i.project !== item.project || i.path !== item.path)
+    );
   }, []);
 
   // Auto-select first project when projects load
@@ -325,6 +298,10 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
 
     socketConnected,
     setSocketConnected,
+
+    selectedItems,
+    addItem,
+    removeItem,
   };
 
   return (

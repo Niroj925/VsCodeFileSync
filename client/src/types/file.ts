@@ -35,3 +35,10 @@ export interface FileTreeNode {
   project: string;
   children?: Record<string, FileTreeNode>;
 }
+
+export interface SelectedItem {
+  type: "file" | "folder";
+  project: string;
+  path: string;
+}
+
