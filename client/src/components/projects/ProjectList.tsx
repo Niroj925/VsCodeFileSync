@@ -1,5 +1,5 @@
 import React from 'react';
-import { Folder, Code, ChevronRight, Clock, Upload, RefreshCw } from 'lucide-react';
+import { Folder, Code, ChevronRight, Clock} from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { formatDate } from '../../utils/formatters';
 
@@ -7,9 +7,7 @@ const ProjectList: React.FC = () => {
   const {
     projects,
     selectedProject,
-    isSyncing,
     handleProjectSelect,
-    handleSyncProject
   } = useProjectContext();
 
   return (
@@ -65,29 +63,7 @@ const ProjectList: React.FC = () => {
             </div>
           </div>
         ))}
-        
-        {projects.length === 0 && (
-          <div className="text-center py-8">
-            <div className="mx-auto w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-              <Folder className="h-8 w-8 text-gray-400" />
-            </div>
-            <p className="text-gray-600 dark:text-gray-400 mb-3">
-              No projects synced yet
-            </p>
-            <button
-              onClick={handleSyncProject}
-              disabled={isSyncing}
-              className="btn-primary w-full flex items-center justify-center space-x-2"
-            >
-              {isSyncing ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4" />
-              )}
-              <span>{isSyncing ? 'Syncing...' : 'Sync First Project'}</span>
-            </button>
-          </div>
-        )}
+
       </div>
     </div>
   );

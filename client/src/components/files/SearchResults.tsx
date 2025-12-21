@@ -4,9 +4,7 @@ import {
   Hash,
   Clock,
   ChevronRight,
-  Search,
-  Upload,
-  RefreshCw,
+  Search
 } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { formatFileSize, formatDate } from '../../utils/formatters';
@@ -16,8 +14,6 @@ const SearchResults: React.FC = () => {
     searchResults,
     selectedProject,
     handleFileSelect,
-    handleSyncProject,
-    loadProjectFiles,
   } = useProjectContext();
 
   if (searchResults.length === 0) {
@@ -36,27 +32,6 @@ const SearchResults: React.FC = () => {
             ? 'Select a project and start searching, or use the VS Code extension to sync your project.'
             : 'Select a project from the sidebar or sync a new project to get started.'}
         </p>
-
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button
-            onClick={handleSyncProject}
-            className="btn-primary flex items-center justify-center gap-2"
-          >
-            <Upload className="h-4 w-4" />
-            <span>Sync Project from VS Code</span>
-          </button>
-
-          <button
-            onClick={() =>
-              selectedProject && loadProjectFiles(selectedProject)
-            }
-            className="btn-secondary flex items-center justify-center gap-2"
-            disabled={!selectedProject}
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span>Refresh Files</span>
-          </button>
-        </div>
       </div>
     );
   }

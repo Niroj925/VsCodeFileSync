@@ -20,6 +20,7 @@ export interface SearchResult {
   snippet?: string;
 }
 
+
 export interface FileMetadata {
   size: number;
   lastModified: string;

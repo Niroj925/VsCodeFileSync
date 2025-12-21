@@ -1,8 +1,8 @@
-import React from 'react';
-import { FileText, X, Copy, Check } from 'lucide-react';
-import { useProjectContext } from '../../contexts/ProjectContext';
-import FileViewer from './FileViewer';
-import SearchResults from './SearchResults';
+import React from "react";
+import { FileText, X, Copy, Check } from "lucide-react";
+import { useProjectContext } from "../../contexts/ProjectContext";
+import FileViewer from "./FileViewer";
+import ChatBox from "../chat/ChatBox";
 
 const FileExplorer: React.FC = () => {
   const {
@@ -10,52 +10,57 @@ const FileExplorer: React.FC = () => {
     searchResults,
     copied,
     copyToClipboard,
-    setSelectedFile
+    setSelectedFile,
   } = useProjectContext();
 
   return (
-    <div className="glass-card rounded-2xl overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <FileText className="h-5 w-5 text-primary-500" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {selectedFile ? 'File Viewer' : `Files ${searchResults.length > 0 ? `(${searchResults.length})` : ''}`}
+    <div className="glass-card rounded-xl flex flex-col h-full overflow-hidden">
+      {/* ================= Header ================= */}
+      <div
+        className="px-4 py-2 border-b border-gray-200/50 dark:border-gray-700/50
+                   bg-gray-50/70 dark:bg-gray-800/60 shrink-0"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <FileText className="h-4 w-4 text-primary-500" />
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+              {selectedFile
+                ? selectedFile.filePath
+                : `Files ${searchResults.length ? `(${searchResults.length})` : ""}`}
             </h2>
-            {selectedFile && (
-              <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                {selectedFile.project}
-              </span>
-            )}
           </div>
-          
-          <div className="flex items-center space-x-2">
-            {selectedFile && (
-              <>
-                <button
-                  onClick={() => copyToClipboard(selectedFile.content)}
-                  className="btn-secondary flex items-center space-x-2"
-                >
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  <span>{copied ? 'Copied!' : 'Copy'}</span>
-                </button>
-                <button
-                  onClick={() => setSelectedFile(null)}
-                  className="btn-secondary flex items-center space-x-2"
-                >
-                  <X className="h-4 w-4" />
-                  <span>Close</span>
-                </button>
-              </>
-            )}
-          </div>
+
+          {selectedFile && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => copyToClipboard(selectedFile.content)}
+                className="btn-secondary px-2 py-1 text-xs flex items-center gap-1"
+              >
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+              </button>
+              <button
+                onClick={() => setSelectedFile(null)}
+                className="btn-secondary px-2 py-1 text-xs flex items-center gap-1"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-6">
-        {selectedFile ? <FileViewer /> : <SearchResults />}
+      {/* ================= Content ================= */}
+      <div className="flex-1 overflow-hidden">
+        {selectedFile ? (
+          <div className="h-full">
+            <FileViewer />
+          </div>
+        ) : (
+          // ChatBox handles messages + selected items internally
+          <div className="h-full overflow-y-auto">
+            <ChatBox />
+          </div>
+        )}
       </div>
     </div>
   );

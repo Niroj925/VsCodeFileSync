@@ -1,8 +1,20 @@
-
 import { ChevronDown, ChevronRight, FileText, Folder } from "lucide-react";
 import { useProjectContext } from "../../contexts/ProjectContext";
 
-const TreeNode = ({ node, level }: any) => {
+interface TreeNodeProps {
+  node: any;
+  level: number;
+}
+
+const sortChildren = (children: Record<string, any>) => {
+  return Object.values(children).sort((a: any, b: any) => {
+    // folders first
+    if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+};
+
+const TreeNode: React.FC<TreeNodeProps> = ({ node, level }) => {
   const { expandedFolders, toggleFolder, handleFileSelect, selectedFile } =
     useProjectContext();
 
@@ -15,22 +27,28 @@ const TreeNode = ({ node, level }: any) => {
         <div
           onClick={() => toggleFolder(key)}
           style={{ paddingLeft: level * 12 }}
-          className="flex items-center gap-1 py-1 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="flex items-center gap-1 py-1 cursor-pointer rounded
+                     hover:bg-gray-200 dark:hover:bg-gray-700 text-sm"
         >
-          {isOpen ? <ChevronDown size={14} className="text-gray-500 dark:text-white" /> : <ChevronRight size={14} className="text-gray-500" />}
-          <Folder size={14} className="text-gray-500" />
-          <span className="text-gray-400">{node.name}</span>
+          {isOpen ? (
+            <ChevronDown size={14} className="text-gray-500 dark:text-gray-300" />
+          ) : (
+            <ChevronRight size={14} className="text-gray-500 dark:text-gray-300" />
+          )}
+          <Folder size={14} className="text-yellow-500" />
+          <span className="truncate text-gray-700 dark:text-gray-300">{node.name}</span>
         </div>
 
         {isOpen &&
-          Object.values(node.children || {}).map((child: any) => (
+          node.children &&
+          sortChildren(node.children).map((child: any) => (
             <TreeNode key={child.path} node={child} level={level + 1} />
           ))}
       </div>
     );
   }
 
-  const active =
+  const isActive =
     selectedFile?.filePath === node.path &&
     selectedFile?.project === node.project;
 
@@ -38,27 +56,36 @@ const TreeNode = ({ node, level }: any) => {
     <div
       onClick={() => handleFileSelect(node.project, node.path)}
       style={{ paddingLeft: level * 12 + 16 }}
-      className={`flex items-center gap-2 py-1 text-gray-400 cursor-pointer ${
-        active ? "bg-gray-200 dark:bg-gray-800" : "hover:bg-gray-500"
-      }`}
+      className={`flex items-center gap-2 py-1 text-sm cursor-pointer rounded
+        ${
+          isActive
+            ? "bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
+            : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+        }`}
     >
-      <FileText className="text-gray-400" size={14} />
-      {node.name}
+      <FileText size={14} className="text-blue-500" />
+      <span className="truncate">{node.name}</span>
     </div>
   );
 };
 
-const SidebarFileTree = () => {
+const SidebarFileTree: React.FC = () => {
   const { selectedProject, fileTree } = useProjectContext();
 
   if (!selectedProject) return null;
 
   const root = fileTree[selectedProject];
-  if (!root) return null;
+  if (!root || !root.children) return null;
 
   return (
-    <div>
-      {Object.values(root.children || {}).map((node: any) => (
+    <div
+      className="text-sm flex flex-col"
+      style={{
+        height: `calc(100vh - 140px)`, 
+        overflowY: 'auto',
+      }}
+    >
+      {sortChildren(root.children).map((node: any) => (
         <TreeNode key={node.path} node={node} level={0} />
       ))}
     </div>
