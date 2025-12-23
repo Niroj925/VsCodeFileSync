@@ -1,76 +1,46 @@
+// components/FileExplorer.tsx
 import React, { useState } from "react";
 import { FileText, X, Copy, Check } from "lucide-react";
 import { useProjectContext } from "../../contexts/ProjectContext";
 import FileViewer from "./FileViewer";
 import ChatBox, { type Message } from "../chat/ChatBox";
 import ChatInput from "../chat/ChatInput";
+import { useChatApi } from "../../hooks/useChatApi";
 
 const STATIC_REPLY = "This is a static response from the assistant.";
 
 const FileExplorer: React.FC = () => {
-  const { selectedFile, searchResults, copied, copyToClipboard, setSelectedFile, selectedItems } =
+  const { selectedFile, searchResults, copied, copyToClipboard, setSelectedFile } =
     useProjectContext();
-
   const [messages, setMessages] = useState<Message[]>([]);
+  const { isLoading: isApiLoading } = useChatApi(); // Get loading state from hook
 
-  // Send message
-  // const handleSend = (text: string) => {
-  //   if (!text.trim() && selectedItems.length === 0) return;
+  // Handle sending - ONLY updates UI, NO API calls here
+  const handleSend = (text: string) => {
+    console.log("📝 [FileExplorer] handleSend called with text:", text);
+    
+    if (!text.trim()) {
+      console.log("⏸️ [FileExplorer] Empty text, skipping");
+      return;
+    }
 
-  //   const message =
-  //     text +
-  //     (selectedItems.length
-  //       ? "\n\nFiles:\n" + selectedItems.map((i) => `- ${i.path}`).join("\n")
-  //       : "");
-
-  //   setMessages((prev) => [
-  //     ...prev,
-  //     { id: crypto.randomUUID(), role: "user", content: message },
-  //     { id: crypto.randomUUID(), role: "assistant", content: STATIC_REPLY },
-  //   ]);
-  // };
-  const handleSend = async (text: string) => {
-  if (!text.trim() && selectedItems.length === 0) return;
-
-  const payload = {
-    message: text,
-    files: selectedItems.map((i) => ({
-      path: i.path, // ✅ plain path only
-    })),
-  };
-
-  // 🔹 Send to backend (fire & forget)
-  try {
-    await fetch("http://localhost:5001/api/chat/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch (err) {
-    console.error("Chat send failed:", err);
-  }
-
-  // 🔹 Update UI (local)
-  setMessages((prev) => [
-    ...prev,
-    {
-      id: crypto.randomUUID(),
+    // Add user message
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
       role: "user",
-      content:
-        text +
-        (selectedItems.length
-          ? "\n\nFiles:\n" +
-            selectedItems.map((i) => `- ${i.path}`).join("\n")
-          : ""),
-    },
-    {
-      id: crypto.randomUUID(),
+      content: text,
+    };
+
+    // Add static assistant response (immediate)
+    const assistantMessage: Message = {
+      id: `assistant-${Date.now()}`,
       role: "assistant",
       content: STATIC_REPLY,
-    },
-  ]);
-};
+    };
 
+    console.log("💬 [FileExplorer] Adding messages to chat");
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+  };
 
   return (
     <div className="glass-card rounded-xl flex flex-col h-full overflow-hidden">
@@ -115,17 +85,19 @@ const FileExplorer: React.FC = () => {
         ) : (
           <div className="h-full flex flex-col">
             <ChatBox messages={messages} />
+            {isApiLoading && (
+              <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                Sending message...
+              </div>
+            )}
           </div>
         )}
-    
       </div>
 
-          <div>
-              <ChatInput
-              onSend={handleSend}
-              // onRemoveItem={removeItem}
-            />
-        </div>
+      {/* ================= Chat Input ================= */}
+      <div>
+        <ChatInput onSend={handleSend} />
+      </div>
     </div>
   );
 };
