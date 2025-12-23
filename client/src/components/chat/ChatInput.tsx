@@ -1,14 +1,12 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Send, X, Folder, FileText } from "lucide-react";
 import { useProjectContext } from "../../contexts/ProjectContext";
 
-const ChatInput: React.FC<{ onSend: (text: string) => void }> = ({
-  onSend,
-}) => {
-  const { selectedItems, removeItem, handleFileSelect } = useProjectContext();
+const ChatInput = ({ onSend }: { onSend: (text: string) => void }) => {
+  const { selectedItems, removeItem } = useProjectContext();
   const [input, setInput] = useState("");
-
-  const sendMessage = () => {
+  console.log("sf:", selectedItems);
+  const sendMessage = async () => {
     if (!input.trim() && selectedItems.length === 0) return;
 
     const message =
@@ -17,8 +15,25 @@ const ChatInput: React.FC<{ onSend: (text: string) => void }> = ({
         ? "\n\nFiles:\n" + selectedItems.map((i) => `- ${i.path}`).join("\n")
         : "");
 
-    onSend(message);
-    setInput("");
+    const payload = {
+      message: input,
+      files: selectedItems,
+    };
+
+    try {
+      await fetch("http://localhost:5001/api/chat/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      console.log("Payload sent:", payload);
+      onSend(message);
+      setInput("");
+    } catch (err) {
+      console.error("Chat send failed:", err);
+    }
   };
 
   return (
@@ -28,9 +43,8 @@ const ChatInput: React.FC<{ onSend: (text: string) => void }> = ({
         <div className="flex flex-wrap gap-2 mb-2">
           {selectedItems.map((item) => (
             <div
-              key={`${item.project}-${item.path}`}
-              onClick={() => handleFileSelect(item.project, item.path)}
-              className="flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-gray-200 dark:bg-gray-800 hover:cursor-pointer"
+              key={item.path}
+              className="flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-gray-200 dark:bg-gray-800"
             >
               {item.type === "folder" ? (
                 <Folder size={12} />
@@ -51,10 +65,16 @@ const ChatInput: React.FC<{ onSend: (text: string) => void }> = ({
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            }
+          }}
           placeholder="Ask something…"
           className="flex-1 bg-transparent outline-none text-sm"
         />
+
         <button
           onClick={sendMessage}
           className="p-2 rounded-lg bg-primary-500 text-white"

@@ -14,21 +14,63 @@ const FileExplorer: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
 
   // Send message
-  const handleSend = (text: string) => {
-    if (!text.trim() && selectedItems.length === 0) return;
+  // const handleSend = (text: string) => {
+  //   if (!text.trim() && selectedItems.length === 0) return;
 
-    const message =
-      text +
-      (selectedItems.length
-        ? "\n\nFiles:\n" + selectedItems.map((i) => `- ${i.path}`).join("\n")
-        : "");
+  //   const message =
+  //     text +
+  //     (selectedItems.length
+  //       ? "\n\nFiles:\n" + selectedItems.map((i) => `- ${i.path}`).join("\n")
+  //       : "");
 
-    setMessages((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), role: "user", content: message },
-      { id: crypto.randomUUID(), role: "assistant", content: STATIC_REPLY },
-    ]);
+  //   setMessages((prev) => [
+  //     ...prev,
+  //     { id: crypto.randomUUID(), role: "user", content: message },
+  //     { id: crypto.randomUUID(), role: "assistant", content: STATIC_REPLY },
+  //   ]);
+  // };
+  const handleSend = async (text: string) => {
+  if (!text.trim() && selectedItems.length === 0) return;
+
+  const payload = {
+    message: text,
+    files: selectedItems.map((i) => ({
+      path: i.path, // ✅ plain path only
+    })),
   };
+
+  // 🔹 Send to backend (fire & forget)
+  try {
+    await fetch("http://localhost:5001/api/chat/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    console.error("Chat send failed:", err);
+  }
+
+  // 🔹 Update UI (local)
+  setMessages((prev) => [
+    ...prev,
+    {
+      id: crypto.randomUUID(),
+      role: "user",
+      content:
+        text +
+        (selectedItems.length
+          ? "\n\nFiles:\n" +
+            selectedItems.map((i) => `- ${i.path}`).join("\n")
+          : ""),
+    },
+    {
+      id: crypto.randomUUID(),
+      role: "assistant",
+      content: STATIC_REPLY,
+    },
+  ]);
+};
+
 
   return (
     <div className="glass-card rounded-xl flex flex-col h-full overflow-hidden">
