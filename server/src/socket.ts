@@ -18,7 +18,6 @@ export const setupSocket = (server: HttpServer): void => {
   io.on('connection', (socket) => {
     console.log('🚀 Frontend connected via WebSocket, ID:', socket.id);
 
-    // Handle custom events from frontend if needed
     socket.on('joinRoom', (room: string) => {
       socket.join(room);
       console.log(`Socket ${socket.id} joined room: ${room}`);
@@ -31,7 +30,6 @@ export const setupSocket = (server: HttpServer): void => {
 
     socket.on('clientEvent', (data: any) => {
       console.log('Received client event:', data);
-      // Handle client events here
     });
 
     socket.on('disconnect', (reason) => {
@@ -43,7 +41,6 @@ export const setupSocket = (server: HttpServer): void => {
     });
   });
 
-  // Log connection status
   io.engine.on("connection_error", (err) => {
     console.error('Socket connection error:', err);
   });
@@ -56,7 +53,6 @@ export const getIO = (): Server => {
   return io;
 };
 
-// Helper functions for emitting events
 export const emitToRoom = (room: string, event: string, data: any): void => {
   const io = getIO();
   io.to(room).emit(event, data);
