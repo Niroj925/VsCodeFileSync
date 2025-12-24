@@ -25,64 +25,52 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // API Routes
 
-// app.post("/api/chat/send", async (req, res) => {
-//   try {
-//     console.log("Chat send request received");
-//     const { message, files } = req.body;
-//     console.log('files:',files);
-
-//     res.json({ success: true, files });
-//   } catch (err) {
-//     console.error("Chat send error:", err);
-//     res.status(500).json({
-//       success: false,
-//       error: err.message,
-//     });
-//   }
-// });
-
-const PROJECTS_BASE = '/Users/nirojthapa/Documents/myproject/cbot'; // Change this to your actual path
+const PROJECTS_BASE = "/Users/nirojthapa/Documents/myproject/cbot"; // Change this to your actual path
 
 app.post("/api/chat/send", async (req, res) => {
   try {
     console.log("Chat send request received");
-    const { message, files } = req.body;
-    
-    const allContents = [];
-    
+
+    const { message = "", files = [] } = req.body;
+
+    // ✅ THIS will be the flat array
+    const flatFiles = [];
+
     for (const item of files) {
       const fullPath = path.join(PROJECTS_BASE, item.path);
-      
+
       try {
-        if (item.type === 'folder') {
+        // 📂 Folder
+        if (item.type === "folder") {
           const folderFiles = await getAllFilesInFolder(fullPath, item.path);
-          allContents.push({
-            type: 'folder',
+
+          // 🔥 FLATTEN here
+          for (const file of folderFiles) {
+            flatFiles.push({
+              path: file.path,
+              content: file.content,
+            });
+          }
+        }
+
+        // 📄 Single file
+        if (item.type === "file") {
+          const content = await fs.readFile(fullPath, "utf8");
+
+          flatFiles.push({
             path: item.path,
-            files: folderFiles,
-            count: folderFiles.length
-          });
-        } else {
-          const content = await fs.readFile(fullPath, 'utf8');
-          allContents.push({
-            type: 'file',
-            path: item.path,
-            content: content
+            content,
           });
         }
       } catch (err) {
-        allContents.push({
-          path: item.path,
-          error: err.message
-        });
+        console.error("Failed to read:", item.path, err.message);
       }
     }
-    
+
     res.json({
       success: true,
-      data: allContents
+      data: { message, files: flatFiles },
     });
-    
   } catch (err) {
     console.error("Chat send error:", err);
     res.status(500).json({
@@ -92,29 +80,29 @@ app.post("/api/chat/send", async (req, res) => {
   }
 });
 
-async function getAllFilesInFolder(folderPath, basePath = '') {
+async function getAllFilesInFolder(folderPath, basePath = "") {
   const files = [];
-  
+
   try {
     const items = await fs.readdir(folderPath);
-    
+
     for (const item of items) {
-      if (item === 'node_modules' || item.startsWith('.')) continue;
-      
+      if (item === "node_modules" || item.startsWith(".")) continue;
+
       const itemPath = path.join(folderPath, item);
       const relativePath = path.join(basePath, item);
       const stats = await fs.stat(itemPath);
-      
+
       if (stats.isDirectory()) {
         const subFiles = await getAllFilesInFolder(itemPath, relativePath);
         files.push(...subFiles);
       } else {
         try {
-          const content = await fs.readFile(itemPath, 'utf8');
+          const content = await fs.readFile(itemPath, "utf8");
           files.push({
             path: relativePath,
             content: content,
-            size: content.length
+            size: content.length,
           });
         } catch (e) {
           // Skip binary files
@@ -124,7 +112,7 @@ async function getAllFilesInFolder(folderPath, basePath = '') {
   } catch (err) {
     console.error(`Error reading ${folderPath}:`, err);
   }
-  
+
   return files;
 }
 

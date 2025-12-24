@@ -17,6 +17,7 @@ import type {
   SearchResult,
   SelectedItem,
 } from "../types";
+import type { ChatResponseData } from "../types/chat";
 
 interface ProjectContextType {
   // State
@@ -59,6 +60,12 @@ interface ProjectContextType {
   selectedItems: SelectedItem[];
   addItem: (item: SelectedItem) => void;
   removeItem: (item: SelectedItem) => void;
+
+  chatResponse: ChatResponseData[];
+
+  addChatResponse: (message: ChatResponseData) => void;
+  addChatResponses: (messages: ChatResponseData[]) => void;
+  clearChatResponse: () => void;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -79,8 +86,21 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [copied, setCopied] = useState(false);
-  // Add new state
+
   const [socketConnected, setSocketConnected] = useState<boolean>(false);
+  const [chatResponse, setChatResponse] = useState<ChatResponseData[]>([]);
+
+  const addChatResponse = useCallback((message: ChatResponseData) => {
+    setChatResponse((prev) => [...prev, message]);
+  }, []);
+
+  const addChatResponses = useCallback((messages: ChatResponseData[]) => {
+    setChatResponse((prev) => [...prev, ...messages]);
+  }, []);
+
+  const clearChatResponse = useCallback(() => {
+    setChatResponse([]);
+  }, []);
 
   const [fileTree, setFileTree] = useState<Record<string, FileTreeNode>>({});
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
@@ -302,6 +322,11 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     selectedItems,
     addItem,
     removeItem,
+
+    chatResponse,
+    addChatResponse,
+    addChatResponses,
+    clearChatResponse,
   };
 
   return (
