@@ -97,3 +97,6 @@ pnpm-lock.yaml
 data/
 db/
 sqlite.db
+
+
+vs-extension/

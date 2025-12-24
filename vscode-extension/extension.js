@@ -50,11 +50,15 @@ async function initialProjectSync(context) {
       },
       async () => {
         const files = collectFiles(WORKSPACE_PATH, WORKSPACE_PATH);
-
+        
+        // NEW: Get project name from workspace folder
+        const projectName = path.basename(WORKSPACE_PATH);
+        
+        // NEW: Updated endpoint and payload structure
         await axios.post(`${BACKEND_URL}/api/project/sync`, {
-          projectName: path.basename(WORKSPACE_PATH),
-          rootPath: WORKSPACE_PATH,
-          files,
+          projectName: projectName,
+          files: files,
+          srcFolder: WORKSPACE_PATH
         });
 
         vscode.window.showInformationMessage(
@@ -99,14 +103,15 @@ async function syncFileCreate(uri) {
     if (shouldIgnore(uri.fsPath)) return;
 
     const stat = fs.statSync(uri.fsPath);
+    const relativePath = path
+      .relative(WORKSPACE_PATH, uri.fsPath)
+      .replace(/\\/g, "/");
 
     // Folder created
     if (stat.isDirectory()) {
+      // NEW: Updated endpoint
       await axios.post(`${BACKEND_URL}/api/file/create-folder`, {
-        path: uri.fsPath,
-        relativePath: path
-          .relative(WORKSPACE_PATH, uri.fsPath)
-          .replace(/\\/g, "/"),
+        relativePath: relativePath
       });
       return;
     }
@@ -114,14 +119,13 @@ async function syncFileCreate(uri) {
     // File created
     const content = fs.readFileSync(uri.fsPath, "utf8");
 
+    // NEW: Updated endpoint and payload
     await axios.post(`${BACKEND_URL}/api/file/create`, {
       path: uri.fsPath,
-      relativePath: path
-        .relative(WORKSPACE_PATH, uri.fsPath)
-        .replace(/\\/g, "/"),
-      content,
+      relativePath: relativePath,
+      content: content,
       size: stat.size,
-      lastModified: stat.mtime,
+      lastModified: stat.mtime
     });
   } catch (err) {
     console.error("Create sync failed:", err.message);
@@ -138,14 +142,12 @@ async function syncFileUpdate(uri) {
     const content = fs.readFileSync(uri.fsPath, "utf8");
     const stat = fs.statSync(uri.fsPath);
 
+    // NEW: Updated endpoint and payload
     await axios.post(`${BACKEND_URL}/api/file/update`, {
       path: uri.fsPath,
-      relativePath: path
-        .relative(WORKSPACE_PATH, uri.fsPath)
-        .replace(/\\/g, "/"),
-      content,
+      content: content,
       size: stat.size,
-      lastModified: stat.mtime,
+      lastModified: stat.mtime
     });
   } catch (err) {
     console.error("Update sync failed:", err.message);
@@ -159,8 +161,9 @@ async function syncFileDelete(uri) {
   try {
     if (shouldIgnore(uri.fsPath)) return;
 
+    // NEW: Updated endpoint and payload
     await axios.post(`${BACKEND_URL}/api/file/delete`, {
-      path: uri.fsPath,
+      path: uri.fsPath
     });
   } catch (err) {
     console.error("Delete sync failed:", err.message);
@@ -183,13 +186,19 @@ function collectFiles(dir, rootDir, list = []) {
     if (stat.isDirectory()) {
       collectFiles(fullPath, rootDir, list);
     } else {
-      list.push({
-        path: path.relative(rootDir, fullPath).replace(/\\/g, "/"),
-        fullPath,
-        content: fs.readFileSync(fullPath, "utf8"),
-        size: stat.size,
-        lastModified: stat.mtime,
-      });
+      try {
+        const content = fs.readFileSync(fullPath, "utf8");
+        list.push({
+          path: path.relative(rootDir, fullPath).replace(/\\/g, "/"),
+          fullPath: fullPath,
+          content: content,
+          size: stat.size,
+          lastModified: stat.mtime
+        });
+      } catch (err) {
+        // Skip binary files
+        console.log(`Skipping binary file: ${fullPath}`);
+      }
     }
   }
 
@@ -200,9 +209,24 @@ function collectFiles(dir, rootDir, list = []) {
  * Ignore unwanted files/folders
  */
 function shouldIgnore(filePath) {
-  const ignorePatterns = ["node_modules", ".git", ".vscode", "dist", "build"];
+  const ignorePatterns = [
+    "node_modules", 
+    ".git", 
+    ".vscode", 
+    "dist", 
+    "build",
+    ".DS_Store",
+    "package-lock.json",
+    "yarn.lock"
+  ];
 
-  return ignorePatterns.some((p) => filePath.includes(p));
+  const fileName = path.basename(filePath);
+  const isHidden = fileName.startsWith('.');
+  
+  return ignorePatterns.some((p) => 
+    filePath.includes(p) || 
+    fileName.includes(p)
+  ) || isHidden;
 }
 
 /**
@@ -214,6 +238,41 @@ function debounce(fn, delay) {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), delay);
   };
+}
+
+/**
+ * Check backend health
+ */
+async function checkBackendHealth() {
+  if (!BACKEND_URL) return false;
+  
+  try {
+    const response = await axios.get(`${BACKEND_URL}/api/test`, {
+      timeout: 3000
+    });
+    return response.data.success === true;
+  } catch (err) {
+    return false;
+  }
+}
+
+/**
+ * Test connection to backend
+ */
+async function testBackendConnection() {
+  try {
+    const isHealthy = await checkBackendHealth();
+    if (isHealthy) {
+      vscode.window.showInformationMessage("✅ Connected to backend server");
+      return true;
+    } else {
+      vscode.window.showErrorMessage("❌ Cannot connect to backend server");
+      return false;
+    }
+  } catch (err) {
+    vscode.window.showErrorMessage(`Connection test failed: ${err.message}`);
+    return false;
+  }
 }
 
 /**
