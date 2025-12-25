@@ -6,7 +6,7 @@ const SidebarSearch: React.FC = () => {
   const { searchQuery, setSearchQuery, handleSearch, loading } = useProjectContext();
 
   return (
-    <form onSubmit={handleSearch} className="px-2 mb-2">
+    <form onSubmit={handleSearch} className="px-2 mb-2 mt-2">
       <div className="relative">
         <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
 

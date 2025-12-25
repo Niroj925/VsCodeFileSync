@@ -1,18 +1,25 @@
-import { Request, Response } from 'express';
-import { getAllFilesInFolder } from '../utils/helpers';
-import { PROJECTS_BASE } from '../config/constants';
-import path from 'path';
-import fs from 'fs-extra';
+import { Request, Response } from "express";
+import { getAllFilesInFolder } from "../utils/helpers";
+import path from "path";
+import fs from "fs-extra";
+import { getStoredProjectDirectory } from "../utils/get-directory";
 
 export const sendChat = async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log("Chat send request received");
-
     const { message = "", files = [] } = req.body;
     const flatFiles: Array<{ path: string; content: string }> = [];
 
+    const projectDirectory = getStoredProjectDirectory();
+    if (!projectDirectory) {
+      res.status(400).json({
+        success: false,
+        error: "Project directory is not set",
+      });
+      return;
+    }
+
     for (const item of files) {
-      const fullPath = path.join(PROJECTS_BASE, item.path);
+      const fullPath = path.join(projectDirectory, item.path);
 
       try {
         // Handle folder
@@ -35,7 +42,11 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
           });
         }
       } catch (err) {
-        console.error("Failed to read:", item.path, err instanceof Error ? err.message : 'Unknown error');
+        console.error(
+          "Failed to read:",
+          item.path,
+          err instanceof Error ? err.message : "Unknown error"
+        );
       }
     }
 
@@ -47,7 +58,7 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
     console.error("Chat send error:", err);
     res.status(500).json({
       success: false,
-      error: err instanceof Error ? err.message : 'Unknown error',
+      error: err instanceof Error ? err.message : "Unknown error",
     });
   }
 };

@@ -9,7 +9,7 @@ const FileViewer: React.FC = () => {
   if (!selectedFile) return null;
 
   return (
-    <div className="space-y-2   max-h-[calc(100vh-100px)] overflow-y-auto overflow-x-auto" ref={fileContentRef}>
+    <div className="space-y-2   max-h-[calc(100vh-225px)] overflow-y-auto overflow-x-auto m-2" ref={fileContentRef}>
       <div className="relative">
         <pre
           className="code-block mt-0 text-sm leading-relaxed "

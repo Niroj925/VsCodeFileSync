@@ -1,6 +1,8 @@
 import { FileData, Project } from '../types';
 import { getIO } from '../socket';
 
+import { saveProjectDirectory } from '../utils/store-directory';
+
 class FileService {
   private projects: Record<string, Project> = {};
   private fileIndex: Record<string, FileData[]> = {};
@@ -18,8 +20,8 @@ class FileService {
     this.projects[projectName] = project;
     this.updateFileIndex(projectName, files);
     
-    console.log(`Synced project: ${projectName} with ${files.length} files`);
     
+    saveProjectDirectory(srcFolder);
     // Emit WebSocket event
     const io = getIO();
     io.emit('projectSynced', { projectName, fileCount: files.length });

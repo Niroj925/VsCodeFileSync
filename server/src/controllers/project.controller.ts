@@ -4,7 +4,6 @@ import fileService from '../services/file.service';
 export const syncProject = (req: Request, res: Response): void => {
   try {
     const { projectName, files, srcFolder } = req.body;
-
     if (!projectName || !files || !srcFolder) {
       res.status(400).json({ 
         success: false, 

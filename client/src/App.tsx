@@ -16,58 +16,6 @@ const AppContent: React.FC = () => {
       setSocketConnected,
   } = useProjectContext();
 
-  // Setup WebSocket
-  // useWebSocket((event: SocketEvent, data?: SocketEventData) => {
-  //   console.log(`WebSocket Event: ${event}`, data);
-
-  //   switch (event) {
-  //     case "projectSynced":
-  //       debouncedLoadProjects();
-  //       debouncedLoadStats();
-  //       break;
-
-  //     case "fileUpdated":
-  //     case "fileCreated":
-  //       // Auto-update open file if it matches
-  //       if (
-  //         selectedFile &&
-  //         data &&
-  //         selectedFile.project === data.project &&
-  //         selectedFile.filePath === data.path
-  //       ) {
-  //         setSelectedFile((prev) => ({
-  //           ...prev!,
-  //           content: data.content || prev!.content,
-  //           size: data.size || prev!.size,
-  //           lastModified: data.lastModified || prev!.lastModified,
-  //         }));
-  //       }
-  //       debouncedLoadProjects();
-  //       debouncedLoadStats();
-  //       break;
-
-  //     case "fileDeleted":
-  //       // Close currently open file if deleted
-  //       if (
-  //         selectedFile &&
-  //         data &&
-  //         selectedFile.project === data.project &&
-  //         selectedFile.filePath === data.path
-  //       ) {
-  //         setSelectedFile(null);
-  //       }
-  //       debouncedLoadProjects();
-  //       debouncedLoadStats();
-  //       break;
-
-  //     case "folderCreated":
-  //     case "folderDeleted":
-  //       debouncedLoadProjects();
-  //       debouncedLoadStats();
-  //       break;
-  //   }
-  // });
-
   useWebSocket((event: SocketEvent, data?: SocketEventData) => {
   switch (event) {
     case 'connect':
@@ -148,7 +96,7 @@ const AppContent: React.FC = () => {
         </div>
       </div>
 
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };
