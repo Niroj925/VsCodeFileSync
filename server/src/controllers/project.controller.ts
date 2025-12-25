@@ -1,13 +1,16 @@
-import { Request, Response } from 'express';
-import fileService from '../services/file.service';
+import { Request, Response } from "express";
+import fileService from "../services/file.service";
+import { saveApiKey } from "../utils/store-api-key";
+import { saveCurrentModelProvider } from "../utils/store-used-model";
+import { getCurrentModelProvider } from "../utils/get-current-model";
 
 export const syncProject = (req: Request, res: Response): void => {
   try {
     const { projectName, files, srcFolder } = req.body;
     if (!projectName || !files || !srcFolder) {
-      res.status(400).json({ 
-        success: false, 
-        error: "Project name, files, and srcFolder are required" 
+      res.status(400).json({
+        success: false,
+        error: "Project name, files, and srcFolder are required",
       });
       return;
     }
@@ -22,9 +25,77 @@ export const syncProject = (req: Request, res: Response): void => {
     });
   } catch (error) {
     console.error("Sync error:", error);
-    res.status(500).json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const saveKey = (req: Request, res: Response) => {
+  try {
+    const { provider, apiKey } = req.body;
+    if (!provider || !apiKey) {
+      return res.status(400).json({
+        success: false,
+        error: "Provider and API key are required",
+      });
+    }
+
+    saveApiKey(provider, apiKey);
+
+    res.json({
+      success: true,
+      message: `API key for ${provider} saved successfully`,
+    });
+  } catch (error) {
+    console.error("Save API key error:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const saveCurrentModel = (req: Request, res: Response) => {
+  try {
+    const { provider, model } = req.body;
+    if (!provider || !model) {
+      return res.status(400).json({
+        success: false,
+        error: "Provider and model are required",
+      });
+    }
+
+    saveCurrentModelProvider(provider, model);
+
+    res.json({
+      success: true,
+      message: `Model provider for ${provider} saved successfully`,
+    });
+  } catch (error) {
+    console.error("Save model error:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+
+export const getCurrentModel = (_req: Request, res: Response): void => {
+  try {
+    const currentModel = getCurrentModelProvider();
+
+    res.json({
+      success: true,
+      model: currentModel, // can be null if not set
+    });
+  } catch (error) {
+    console.error("Get current model error:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
@@ -32,28 +103,30 @@ export const syncProject = (req: Request, res: Response): void => {
 export const getProjects = (_req: Request, res: Response): void => {
   try {
     const projects = fileService.getAllProjects();
-    
+
     res.json({
       success: true,
       projects,
     });
   } catch (error) {
     console.error("Get projects error:", error);
-    res.status(500).json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };
 
+
+
 export const getProjectFiles = (req: Request, res: Response): void => {
   try {
     const { projectName } = req.params;
-    
+
     if (!projectName) {
-      res.status(400).json({ 
-        success: false, 
-        error: "Project name is required" 
+      res.status(400).json({
+        success: false,
+        error: "Project name is required",
       });
       return;
     }
@@ -61,9 +134,9 @@ export const getProjectFiles = (req: Request, res: Response): void => {
     const project = fileService.getProject(projectName);
 
     if (!project) {
-      res.status(404).json({ 
+      res.status(404).json({
         success: false,
-        error: "Project not found" 
+        error: "Project not found",
       });
       return;
     }
@@ -71,7 +144,7 @@ export const getProjectFiles = (req: Request, res: Response): void => {
     res.json({
       success: true,
       project: projectName,
-      files: project.files.map(file => ({
+      files: project.files.map((file) => ({
         path: file.path,
         size: file.size,
         lastModified: file.lastModified,
@@ -79,9 +152,9 @@ export const getProjectFiles = (req: Request, res: Response): void => {
     });
   } catch (error) {
     console.error("Get project files error:", error);
-    res.status(500).json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };

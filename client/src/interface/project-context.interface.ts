@@ -20,6 +20,8 @@ export interface ProjectContextType {
   copied: boolean;
   stats: ReturnType<typeof useStats>["stats"];
   loading: boolean;
+  isOpenApiKeyModal: boolean;
+  isOpenModelModal: boolean;
 
   // Actions
   setSelectedProject: React.Dispatch<React.SetStateAction<string>>;
@@ -28,6 +30,8 @@ export interface ProjectContextType {
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setIsSyncing: React.Dispatch<React.SetStateAction<boolean>>;
   setCopied: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsOpenApiKeyModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsOpenModelModal: React.Dispatch<React.SetStateAction<boolean>>;
 
   // Functions
   loadProjects: () => Promise<Project[]>;

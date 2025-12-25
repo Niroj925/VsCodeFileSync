@@ -2,24 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import http from "http";
-
-// Import controllers
-import { sendChat } from "./controllers/chat.controller";
-import {
-  syncProject,
-  getProjects,
-  getProjectFiles,
-} from "./controllers/project.controller";
-import {
-  createFile,
-  createFolder,
-  updateFile,
-  deleteFile,
-  searchFiles,
-  getFileContent,
-} from "./controllers/file.controller";
-
-// Import socket setup
+import apiRoutes from "./routes";
 import { setupSocket } from "./socket";
 
 // Load environment variables
@@ -27,7 +10,6 @@ dotenv.config();
 
 // Constants
 const PORT = process.env.PORT || 5001;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:3000";
 
 // Initialize Express app
 const app = express();
@@ -44,34 +26,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // API Routes
-
-// Chat routes
-app.post("/api/chat/send", sendChat);
-
-// Project routes
-app.post("/api/project/sync", syncProject);
-app.get("/api/projects", getProjects);
-app.get("/api/project/:projectName/files", getProjectFiles);
-
-// File operation routes
-app.post("/api/file/create", createFile);
-app.post("/api/file/create-folder", createFolder);
-app.post("/api/file/update", updateFile);
-app.post("/api/file/delete", deleteFile);
-
-// Search and file content routes
-app.get("/api/search", searchFiles);
-app.get("/api/file", getFileContent);
-
-// Simple health check
-app.get("/test", (_req, res) => {
-  res.json({
-    success: true,
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    service: "CodeBot Backend API",
-  });
-});
+app.use("/api", apiRoutes); 
 
 // 404 handler
 app.use((_req, res) => {

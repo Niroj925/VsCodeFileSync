@@ -3,9 +3,11 @@ import { ProjectProvider, useProjectContext } from "./contexts/ProjectContext";
 import { useWebSocket } from "./hooks/useWebSocket";
 import Header from "./components/layout/Header";
 import Sidebar from "./components/layout/Sidebar";
-import Footer from "./components/layout/Footer";
+// import Footer from "./components/layout/Footer";
 import FileExplorer from "./components/files/FileExplorer";
 import type { SocketEvent, SocketEventData } from "./types";
+import Model from "./components/model";
+import { ToastProvider } from "./components/ui/Toast";
 
 const AppContent: React.FC = () => {
   const {
@@ -13,66 +15,63 @@ const AppContent: React.FC = () => {
     debouncedLoadProjects,
     debouncedLoadStats,
     setSelectedFile,
-      setSocketConnected,
+    setSocketConnected,
   } = useProjectContext();
 
   useWebSocket((event: SocketEvent, data?: SocketEventData) => {
-  switch (event) {
-    case 'connect':
-      setSocketConnected(true);
-      break;
+    switch (event) {
+      case "connect":
+        setSocketConnected(true);
+        break;
 
-    case 'disconnect':
-      setSocketConnected(false);
-      break;
+      case "disconnect":
+        setSocketConnected(false);
+        break;
 
-    case 'projectSynced':
-      debouncedLoadProjects();
-      debouncedLoadStats();
-      break;
+      case "projectSynced":
+        debouncedLoadProjects();
+        debouncedLoadStats();
+        break;
 
-    case 'fileUpdated':
-    case 'fileCreated':
-      if (
-        selectedFile &&
-        data &&
-        selectedFile.project === data.project &&
-        selectedFile.filePath === data.path
-      ) {
-        setSelectedFile(prev => ({
-          ...prev!,
-          content: data.content ?? prev!.content,
-          size: data.size ?? prev!.size,
-          lastModified: data.lastModified ?? prev!.lastModified,
-        }));
-      }
-      debouncedLoadProjects();
-      debouncedLoadStats();
-      break;
+      case "fileUpdated":
+      case "fileCreated":
+        if (
+          selectedFile &&
+          data &&
+          selectedFile.project === data.project &&
+          selectedFile.filePath === data.path
+        ) {
+          setSelectedFile((prev) => ({
+            ...prev!,
+            content: data.content ?? prev!.content,
+            size: data.size ?? prev!.size,
+            lastModified: data.lastModified ?? prev!.lastModified,
+          }));
+        }
+        debouncedLoadProjects();
+        debouncedLoadStats();
+        break;
 
-    case 'fileDeleted':
-      if (
-        selectedFile &&
-        data &&
-        selectedFile.project === data.project &&
-        selectedFile.filePath === data.path
-      ) {
-        setSelectedFile(null);
-      }
-      debouncedLoadProjects();
-      debouncedLoadStats();
-      break;
+      case "fileDeleted":
+        if (
+          selectedFile &&
+          data &&
+          selectedFile.project === data.project &&
+          selectedFile.filePath === data.path
+        ) {
+          setSelectedFile(null);
+        }
+        debouncedLoadProjects();
+        debouncedLoadStats();
+        break;
 
-    case 'folderCreated':
-    case 'folderDeleted':
-      debouncedLoadProjects();
-      debouncedLoadStats();
-      break;
-  }
-});
-
-
-
+      case "folderCreated":
+      case "folderDeleted":
+        debouncedLoadProjects();
+        debouncedLoadStats();
+        break;
+    }
+  });
 
   const { loadProjects } = useProjectContext();
   useEffect(() => {
@@ -88,14 +87,13 @@ const AppContent: React.FC = () => {
           <Sidebar />
 
           <div className="flex-1 flex flex-col overflow-hidden min-h-0">
-
             <div className="flex-1 overflow-auto min-h-0">
               <FileExplorer />
             </div>
           </div>
         </div>
       </div>
-
+      <Model />
       {/* <Footer /> */}
     </div>
   );
@@ -103,9 +101,11 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <ProjectProvider>
-      <AppContent />
-    </ProjectProvider>
+    <ToastProvider>
+      <ProjectProvider>
+        <AppContent />
+      </ProjectProvider>
+    </ToastProvider>
   );
 };
 
