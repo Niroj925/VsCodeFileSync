@@ -6,4 +6,5 @@ const router = Router();
 
 router.post('/send', sendChat);
 
+
 export default router;

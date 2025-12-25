@@ -21,7 +21,6 @@ export interface ProjectContextType {
   stats: ReturnType<typeof useStats>["stats"];
   loading: boolean;
   isOpenApiKeyModal: boolean;
-  isOpenModelModal: boolean;
 
   // Actions
   setSelectedProject: React.Dispatch<React.SetStateAction<string>>;
@@ -31,7 +30,6 @@ export interface ProjectContextType {
   setIsSyncing: React.Dispatch<React.SetStateAction<boolean>>;
   setCopied: React.Dispatch<React.SetStateAction<boolean>>;
   setIsOpenApiKeyModal: React.Dispatch<React.SetStateAction<boolean>>;
-  setIsOpenModelModal: React.Dispatch<React.SetStateAction<boolean>>;
 
   // Functions
   loadProjects: () => Promise<Project[]>;
