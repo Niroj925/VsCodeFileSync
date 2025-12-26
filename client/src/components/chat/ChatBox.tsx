@@ -10,7 +10,7 @@ const ChatBox: React.FC = () => {
   }, [chatResponse]);
 
   return (
-    <div className=" h-full flex flex-col overflow-y-auto  min-h-[calc(100vh-80px)]">
+    <div className=" h-full flex flex-col overflow-y-auto ">
       {/* Scrollable chat area - now properly contained */}
       <div 
         ref={containerRef}
