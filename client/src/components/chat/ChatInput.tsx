@@ -4,7 +4,7 @@ import { useProjectContext } from "../../contexts/ProjectContext";
 import { useChatApi } from "../../hooks/useChatApi";
 
 const ChatInput: React.FC = () => {
-  const { selectedItems, removeItem, addChatResponse, clearSelectedItems } =
+  const { selectedItems, removeItem, addChatResponse, clearSelectedItems,setSelectedFile } =
     useProjectContext();
   const [input, setInput] = useState("");
   const { sendMessage, isLoading, error, clearError } = useChatApi();
@@ -26,7 +26,7 @@ const ChatInput: React.FC = () => {
           files: assistantData.files,
         });
         clearSelectedItems();
-
+        setSelectedFile(null);
         setInput("");
       }
     } catch (err) {
@@ -93,3 +93,4 @@ const ChatInput: React.FC = () => {
 };
 
 export default ChatInput;
+

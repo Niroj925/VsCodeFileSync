@@ -5,13 +5,12 @@ const ChatBox: React.FC = () => {
   const { chatResponse } = useProjectContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-console.log('cr:',chatResponse)
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatResponse]);
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto">
+    <div className=" h-full flex flex-col overflow-y-auto  min-h-[calc(100vh-80px)]">
       {/* Scrollable chat area - now properly contained */}
       <div 
         ref={containerRef}

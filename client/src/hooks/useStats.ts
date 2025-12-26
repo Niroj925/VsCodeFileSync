@@ -1,11 +1,8 @@
 import { useState, useCallback } from 'react';
 import { formatFileSize } from '../utils/formatters';
 import type { Project, ProjectStats } from '../types';
+import type { UseStatsReturn } from '../interface';
 
-interface UseStatsReturn {
-  stats: ProjectStats;
-  calculateStats: () => void;
-}
 
 export const useStats = (projects: Project[]): UseStatsReturn => {
   const [stats, setStats] = useState<ProjectStats>({

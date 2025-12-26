@@ -1,11 +1,7 @@
 import { useState, useCallback } from "react";
-import axios from "axios";
 import { useToast } from "../components/ui/Toast";
-
-export interface CurrentModel {
-  provider: string;
-  model: string;
-}
+import { projectService } from "../services/projectService";
+import type { CurrentModel } from "../interface";
 
 export const useModelApi = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -14,9 +10,6 @@ export const useModelApi = () => {
 
   const { showToast } = useToast();
 
-  /* =======================
-   * Save Model
-   * ======================= */
   const saveModel = useCallback(
     async (provider: string, modelName: string) => {
       if (!modelName.trim()) {
@@ -30,22 +23,13 @@ export const useModelApi = () => {
       setError(null);
 
       try {
-        const res = await axios.post(
-          "http://localhost:5001/api/project/save-model",
-          {
-            provider,
-            model: modelName,
-          }
-        );
-
-        setCurrentModel({ provider, model: modelName });
-        showToast("success", "Model saved successfully!");
-        return res.data;
+        const model = await projectService.saveModel(provider, modelName);
+        setCurrentModel(model);
+        showToast("success", "Model changed successfully!");
+        return model;
       } catch (err: any) {
         const message =
-          err.response?.data?.message ||
-          err.message ||
-          "Failed to save model";
+          err?.message || "Failed to save model";
 
         setError(message);
         showToast("error", message);
@@ -57,25 +41,17 @@ export const useModelApi = () => {
     [showToast]
   );
 
-  /* =======================
-   * Get Current Model
-   * ======================= */
   const getCurrentModel = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const res = await axios.get(
-        "http://localhost:5001/api/project/get-model"
-      );
-
-      setCurrentModel(res.data?.model ?? null);
-      return res.data?.model ?? null;
+      const model = await projectService.getCurrentModel();
+      setCurrentModel(model);
+      return model;
     } catch (err: any) {
       const message =
-        err.response?.data?.message ||
-        err.message ||
-        "Failed to load current model";
+        err?.message || "Failed to load current model";
 
       setError(message);
       showToast("error", message);

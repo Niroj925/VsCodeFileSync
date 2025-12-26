@@ -1,83 +1,78 @@
-// hooks/useChatApi.ts
+
 import { useState, useRef, useCallback } from 'react';
-import axios from 'axios';
+import { useToast } from '../components/ui/Toast';
+import { chatService } from '../services/chatServices';
 
 export const useChatApi = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isSendingRef = useRef(false);
 
-  const sendMessage = useCallback(async (message: string, files: any[]) => {
-    // Prevent multiple simultaneous calls
-    if (isSendingRef.current) {
-      console.warn('⚠️ Already sending a message, skipping');
-      return null;
-    }
+  const { showToast } = useToast();
 
-    if (!message.trim() && files.length === 0) {
-      console.warn('⚠️ No message or files to send');
-      return null;
-    }
+  const sendMessage = useCallback(
+    async (message: string, files: any[]) => {
+      if (isSendingRef.current) {
+        console.warn('⚠️ Already sending a message, skipping');
+        return null;
+      }
 
-    isSendingRef.current = true;
-    setIsLoading(true);
-    setError(null);
+      if (!message.trim() && files.length === 0) {
+        const msg = 'No message or files to send';
+        setError(msg);
+        showToast('error', msg);
+        return null;
+      }
 
-    try {
+      isSendingRef.current = true;
+      setIsLoading(true);
+      setError(null);
+
       const payload = {
         message: message.trim(),
-        files: files,
+        files,
         timestamp: Date.now(),
-        requestId: `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        requestId: `chat-${Date.now()}-${Math.random()
+          .toString(36)
+          .substr(2, 9)}`,
       };
 
-      console.log('📤 [useChatApi] Sending message:', {
-        message: payload.message,
-        fileCount: payload.files.length,
-        requestId: payload.requestId
-      });
+      try {
+        console.log('📤 [useChatApi] Sending:', {
+          message: payload.message,
+          fileCount: files.length,
+          requestId: payload.requestId,
+        });
 
-      const response = await axios.post(
-        'http://localhost:5001/api/chat/send',
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          timeout: 30000,
-        }
-      );
+        const data = await chatService.sendChatMessage(payload);
 
-      console.log('✅ [useChatApi] Response received:', {
-        requestId: payload.requestId,
-        data: response.data
-      });
-      
-      return {
-        ...response.data,
-        requestId: payload.requestId
-      };
-    } catch (err: any) {
-      console.error('❌ [useChatApi] Send failed:', {
-        error: err.message,
-        status: err.response?.status,
-        data: err.response?.data
-      });
-      
-      if (err.response) {
-        setError(`Error: ${err.response.status} - ${err.response.data?.message || 'Server error'}`);
-      } else if (err.request) {
-        setError('Network error: Could not connect to server');
-      } else {
-        setError(`Error: ${err.message}`);
+        console.log('✅ [useChatApi] Response received:', {
+          requestId: payload.requestId,
+          data,
+        });
+
+        return {
+          ...data,
+          requestId: payload.requestId,
+        };
+      } catch (err: any) {
+        console.error('❌ [useChatApi] Send failed:', err);
+
+        const message =
+          err?.response?.data?.message ||
+          err?.message ||
+          'Failed to send message';
+
+        setError(message);
+        showToast('error', message);
+        throw err;
+      } finally {
+        isSendingRef.current = false;
+        setIsLoading(false);
       }
-      
-      throw err;
-    } finally {
-      isSendingRef.current = false;
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    [showToast]
+  );
 
   const clearError = () => setError(null);
 

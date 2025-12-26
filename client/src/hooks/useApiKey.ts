@@ -1,59 +1,54 @@
 import { useState, useRef, useCallback } from 'react';
-import axios from 'axios';
+import { useToast } from '../components/ui/Toast';
+import { projectService } from '../services/projectService';
 
 export const useApiKey = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isSavingRef = useRef(false);
 
-  const saveKey = useCallback(async (provider: string, apiKey: string) => {
-    // Prevent multiple simultaneous calls
-    if (isSavingRef.current) {
-      console.warn('⚠️ Already saving, skipping');
-      return null;
-    }
+  const { showToast } = useToast();
 
-    if (!provider || !apiKey.trim()) {
-      console.warn('⚠️ Provider and API key are required');
-      return null;
-    }
-
-    isSavingRef.current = true;
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const payload = { provider, apiKey };
-
-      console.log('📤 [useApiKey] Saving key:', payload);
-
-      const response = await axios.post('http://localhost:5001/api/project/save-key', payload, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000,
-      });
-
-      console.log('✅ [useApiKey] Saved:', response.data);
-
-      return response.data;
-    } catch (err: any) {
-      console.error('❌ [useApiKey] Save failed:', err);
-
-      if (err.response) {
-        setError(
-          `Error: ${err.response.status} - ${err.response.data?.message || 'Server error'}`
-        );
-      } else if (err.request) {
-        setError('Network error: Could not connect to server');
-      } else {
-        setError(`Error: ${err.message}`);
+  const saveKey = useCallback(
+    async (provider: string, apiKey: string) => {
+      // Prevent multiple simultaneous calls
+      if (isSavingRef.current) {
+        console.warn('⚠️ Already saving, skipping');
+        return null;
       }
 
-      throw err;
-    } finally {
-      isSavingRef.current = false;
-      setIsLoading(false);
-    }
-  }, []);
+      if (!provider || !apiKey.trim()) {
+        const msg = 'Provider and API key are required';
+        setError(msg);
+        showToast('error', msg);
+        return null;
+      }
+
+      isSavingRef.current = true;
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        await projectService.saveApiKey(provider, apiKey);
+
+        showToast('success', 'API key saved successfully!');
+        return true;
+      } catch (err: any) {
+        const message =
+          err?.response?.data?.message ||
+          err?.message ||
+          'Failed to save API key';
+
+        setError(message);
+        showToast('error', message);
+        throw err;
+      } finally {
+        isSavingRef.current = false;
+        setIsLoading(false);
+      }
+    },
+    [showToast]
+  );
 
   const clearError = () => setError(null);
 

@@ -63,7 +63,7 @@ export const useWebSocket = (onEvent?: EventCallback): UseWebSocketReturn => {
 
     events.forEach(event => {
       socket.on(event, (data: SocketEventData) => {
-        console.log(`📡 Received event: ${event}`, data);
+        // console.log(`📡 Received event: ${event}`, data);
         onEventRef.current?.(event, data);
       });
     });

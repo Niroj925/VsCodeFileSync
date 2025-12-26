@@ -1,3 +1,4 @@
+import type { CurrentModel } from '../interface';
 import type { FileContent, FileItem, Project, SearchResult } from '../types';
 import api from './api';
 
@@ -34,7 +35,7 @@ export const projectService = {
     filePath: string
   ): Promise<FileContent> => {
     const data = await api.get<{ file: FileContent }>(
-      '/api/file',
+      '/api/file/content',
       { params: { project, filePath } }
     );
     return data.file;
@@ -42,5 +43,34 @@ export const projectService = {
 
   syncProject: async (projectName: string): Promise<void> => {
     await api.post<void>('/api/project/sync', { projectName });
+  },
+
+  getCurrentModel: async (): Promise<CurrentModel | null> => {
+    const data = await api.get<{ model: CurrentModel | null }>(
+      '/api/project/get-model'
+    );
+    return data.model ?? null;
+  },
+
+  saveModel: async (
+    provider: string,
+    model: string
+  ): Promise<CurrentModel> => {
+    const data = await api.post<{ model: CurrentModel }>(
+      '/api/project/save-model',
+      { provider, model }
+    );
+
+    return data.model ?? { provider, model };
+  },
+
+    saveApiKey: async (
+    provider: string,
+    apiKey: string
+  ): Promise<void> => {
+    await api.post<void>('/api/project/save-key', {
+      provider,
+      apiKey,
+    });
   },
 };

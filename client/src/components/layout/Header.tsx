@@ -3,17 +3,14 @@ import {
   Menu,
   Code,
   Server,
-  Users,
   KeyRound,
   ChevronDown,
-  SlidersHorizontal,
   Save,
 } from "lucide-react";
 import { useProjectContext } from "../../contexts/ProjectContext";
 import { useModelApi } from "../../hooks/useModelApi";
 const Header: React.FC = () => {
   const {
-    stats,
     sidebarOpen,
     setSidebarOpen,
     socketConnected,
@@ -22,10 +19,6 @@ const Header: React.FC = () => {
   } = useProjectContext();
 
   const {saveModel, currentModel, getCurrentModel } = useModelApi();
-
-
-
-  console.log("Current Model in Header:", currentModel);
 
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState("OpenAI");
@@ -106,7 +99,7 @@ useEffect(() => {
                text-gray-600 dark:text-gray-300
                hover:bg-gray-200 dark:hover:bg-gray-700"
                 >
-                  <ChevronDown size={18} />
+                  <ChevronDown size={18} className="hover:text-primary-500" />
                 </button>
 
                 {/* Dropdown */}
@@ -170,7 +163,7 @@ useEffect(() => {
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
               title="API Key Management"
             >
-              <KeyRound className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <KeyRound className="h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-primary-500" />
             </button>
           </div>
         </div>
