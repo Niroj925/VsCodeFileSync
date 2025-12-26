@@ -3,18 +3,18 @@ import { useProjectContext } from "../../contexts/ProjectContext";
 import TreeNode from "../files/TreeNode";
 
 const SidebarFileTree: React.FC = () => {
-  const { selectedProject, fileTree } = useProjectContext();
-
+  const { selectedProject, fileTree, searchQuery } = useProjectContext();
   if (!selectedProject) return null;
 
   const root = fileTree[selectedProject];
   if (!root || !root.children) return null;
-
+  let sh =
+    searchQuery.length > 0 ? "calc(100vh - 330px)" : "calc(100vh - 140px)";
   return (
     <div
       className="text-sm flex flex-col"
       style={{
-        height: `calc(100vh - 140px)`, 
+        height: sh,
         overflowY: "auto",
       }}
     >
@@ -31,4 +31,3 @@ const SidebarFileTree: React.FC = () => {
 };
 
 export default SidebarFileTree;
-

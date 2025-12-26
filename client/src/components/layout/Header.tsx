@@ -160,7 +160,10 @@ useEffect(() => {
 
             <button
               onClick={() => setIsOpenApiKeyModal(!isOpenApiKeyModal)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              // className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+               className="p-1.5 rounded-full
+               text-gray-600 dark:text-gray-300
+               hover:bg-gray-200 dark:hover:bg-gray-700"
               title="API Key Management"
             >
               <KeyRound className="h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-primary-500" />
