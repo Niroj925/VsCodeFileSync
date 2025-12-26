@@ -3,7 +3,7 @@ import api from './api';
 
 export const projectService = {
   getProjects: async (): Promise<Project[]> => {
-    const data = await api.get<{ projects: Project[] }>('/api/projects');
+    const data = await api.get<{ projects: Project[] }>('/api/project/all');
     return data.projects;
   },
 

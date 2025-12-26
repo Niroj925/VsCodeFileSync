@@ -3,7 +3,7 @@ import { useProjectContext } from "../../contexts/ProjectContext";
 
 const FileViewer: React.FC = () => {
   const { selectedFile } = useProjectContext();
-
+console.log('Selected File in FileViewer:', selectedFile);
   const fileContentRef = useRef<HTMLDivElement>(null);
 
   if (!selectedFile) return null;

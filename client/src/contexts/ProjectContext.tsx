@@ -153,6 +153,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const handleFileSelect = useCallback(
     async (project: string, filePath: string) => {
+      console.log('handleFileSelect called with:', project, filePath);
       try {
         const file = await loadFileContent(project, filePath);
         setSelectedFile({ ...file, project, filePath });
