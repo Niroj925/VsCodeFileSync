@@ -61,6 +61,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level }) => {
               }}
               className="
                 h-4 w-4
+                text-gray-600 dark:text-gray-400
                 opacity-0
                 group-hover:opacity-100
                 transition

@@ -16,5 +16,4 @@ router.post('/update', updateFile);
 router.post('/delete', deleteFile);
 router.get('/search', searchFiles);
 router.get('/content', getFileContent);
-
 export default router;
