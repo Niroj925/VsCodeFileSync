@@ -2,11 +2,11 @@ import fs from 'fs';
 import path from 'path';
 
 interface ApiKeyData {
-  provider: string;
+  name: string;
   apiKey: string;
 }
 
-export function saveApiKey(provider: string, apiKey: string): void {
+export function saveApiKey(name: string, apiKey: string): void {
   const dataDir = path.join(process.cwd(), 'data');
   const dataFile = path.join(dataDir, 'data.json');
 
@@ -28,18 +28,18 @@ export function saveApiKey(provider: string, apiKey: string): void {
     }
   }
 
-  // Ensure key array exists
-  if (!Array.isArray(jsonData.key)) {
-    jsonData.key = [];
+  // Ensure providers array exists
+  if (!Array.isArray(jsonData.providers)) {
+    jsonData.providers = [];
   }
 
   // Check if provider exists, update if yes
-  const index = jsonData.key.findIndex((k: ApiKeyData) => k.provider === provider);
+  const index = jsonData.providers.findIndex((k: ApiKeyData) => k.name === name);
   if (index !== -1) {
-    jsonData.key[index].apiKey = apiKey;
+    jsonData.providers[index].apiKey = apiKey;
   } else {
     // Append new key
-    jsonData.key.push({ provider, apiKey });
+    jsonData.providers.push({ name, apiKey });
   }
 
   // Write back to file

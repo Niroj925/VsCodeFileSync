@@ -13,13 +13,6 @@ export interface Project {
   lastSynced: Date;
 }
 
-export interface ChatRequest {
-  message: string;
-  files: Array<{
-    path: string;
-    type: 'file' | 'folder';
-  }>;
-}
 
 export interface ChatResponse {
   success: boolean;
@@ -64,4 +57,70 @@ export interface FileEventData {
 export interface ProjectEventData {
   projectName: string;
   fileCount: number;
+}
+
+// File and project types (existing)
+export interface FileData {
+  path: string;
+  fullPath: string;
+  content: string;
+  size: number;
+  lastModified: Date;
+}
+
+export interface Project {
+  name: string;
+  srcFolder: string;
+  files: FileData[];
+  lastSynced: Date;
+}
+
+// Chat/LMM types
+export interface ChatRequest {
+  query: string;
+  files: Array<{
+    path: string;
+    // type: 'file' | 'folder' | 'project';
+    content?: string; // For direct content
+  }>;
+  projectName?: string;
+  options?: {
+    temperature?: number;
+    maxTokens?: number;
+  };
+}
+
+// types/llm-response.ts
+
+export type ChatBlockType =
+  | "query"
+  | "summary"
+  | "analysis"
+  | "text"
+  | "list"
+  | "code"
+  | "warning";
+
+export interface ChatBlock {
+  type: ChatBlockType;
+  content?: string;
+
+  // Only for code blocks
+  filePath?: string;
+  language?: string;
+}
+
+export interface LLMResponse {
+  success: boolean;
+
+  /** Original user query */
+  query: string;
+
+  provider: string;
+  model: string;
+
+  /** Ordered blocks for UI rendering */
+  blocks: ChatBlock[];
+
+  timestamp: Date;
 }
