@@ -44,12 +44,11 @@ class LLMService {
       const current = llmConfig.getCurrentProvider();
       const providerName = current.provider;
       const model = current.model;
-
       const provider = this.providers.get(providerName);
       if (!provider) {
         throw new Error(`Provider "${providerName}" is not configured`);
       }
-
+console.log(`Using LLM Provider: ${providerName} with model ${model}`);
       // Use files directly from request
       const filesWithContent = request.files.map(file => ({
         path: file.path,

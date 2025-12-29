@@ -89,9 +89,6 @@ export interface ChatRequest {
     maxTokens?: number;
   };
 }
-
-// types/llm-response.ts
-
 export type ChatBlockType =
   | "query"
   | "summary"
@@ -99,28 +96,21 @@ export type ChatBlockType =
   | "text"
   | "list"
   | "code"
-  | "warning";
+  | "warning"
+  | "file-structure";  
 
 export interface ChatBlock {
   type: ChatBlockType;
   content?: string;
-
-  // Only for code blocks
   filePath?: string;
   language?: string;
 }
 
 export interface LLMResponse {
   success: boolean;
-
-  /** Original user query */
   query: string;
-
   provider: string;
   model: string;
-
-  /** Ordered blocks for UI rendering */
   blocks: ChatBlock[];
-
   timestamp: Date;
 }

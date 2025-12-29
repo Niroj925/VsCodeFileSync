@@ -1,22 +1,27 @@
-import { BaseLLMProvider, LLMRequest } from './base.provider';
-import { LLMProviderConfig } from '../config/llm-config';
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
+import { BaseLLMProvider, LLMRequest } from "./base.provider";
+import llmConfig, { LLMProviderConfig } from "../config/llm-config";
+import {
+  GoogleGenerativeAI,
+  HarmCategory,
+  HarmBlockThreshold,
+} from "@google/generative-ai";
 
 export class GeminiProvider extends BaseLLMProvider {
-  name = 'gemini';
+  name = "gemini";
   apiKey: string;
   baseURL?: string | undefined;
-  
+
   private genAI: GoogleGenerativeAI;
   private model: any;
 
   constructor(config: LLMProviderConfig) {
     super();
     this.apiKey = config.apiKey;
-    
+    const current = llmConfig.getCurrentProvider();
+    // console.log('current model provider config:', current);
     this.genAI = new GoogleGenerativeAI(this.apiKey);
-    this.model = this.genAI.getGenerativeModel({ 
-      model: config.models?.[0] || 'gemini-pro',
+    this.model = this.genAI.getGenerativeModel({
+      model: current.model || "gemini-1.5-pro",
       safetySettings: [
         {
           category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -32,14 +37,17 @@ export class GeminiProvider extends BaseLLMProvider {
 
   async sendMessage(request: LLMRequest): Promise<string> {
     try {
-      const truncatedPrompt = this.truncatePrompt(request.prompt, request.maxTokens);
-      
+      const truncatedPrompt = this.truncatePrompt(
+        request.prompt,
+        request.maxTokens
+      );
+
       const result = await this.model.generateContent({
         contents: [
           {
-            role: 'user',
-            parts: [{ text: truncatedPrompt }]
-          }
+            role: "user",
+            parts: [{ text: truncatedPrompt }],
+          },
         ],
         generationConfig: {
           temperature: request.temperature || 0.7,
@@ -49,9 +57,8 @@ export class GeminiProvider extends BaseLLMProvider {
 
       const response = await result.response;
       return response.text().trim();
-      
     } catch (error: any) {
-      console.error('Gemini provider error:', error);
+      console.error("Gemini provider error:", error);
       throw new Error(`Gemini API error: ${this.formatError(error)}`);
     }
   }

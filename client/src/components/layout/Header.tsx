@@ -6,22 +6,31 @@ import {
   KeyRound,
   ChevronDown,
   Save,
+  Layers,
 } from "lucide-react";
 import { useProjectContext } from "../../contexts/ProjectContext";
 import { useModelApi } from "../../hooks/useModelApi";
+import { useProviderModel } from "../../hooks/useProviderModel";
 const Header: React.FC = () => {
   const {
     sidebarOpen,
     setSidebarOpen,
     socketConnected,
     isOpenApiKeyModal,
+    isOpenProviderModal,
     setIsOpenApiKeyModal,
+    setIsOpenProviderModal,
   } = useProjectContext();
 
-  const {saveModel, currentModel, getCurrentModel } = useModelApi();
+  const { saveModel, currentModel, getCurrentModel } = useModelApi();
+
+  const [models, setModels] = useState<string[]>([]);
+
+  const { getModelsByProvider, isLoading, error, clearError } =
+    useProviderModel();
 
   const [open, setOpen] = useState(false);
-  const [provider, setProvider] = useState("OpenAI");
+  const [provider, setProvider] = useState("openai");
   const [model, setModel] = useState("gpt-4o-mini");
 
   const handleSave = () => {
@@ -30,10 +39,21 @@ const Header: React.FC = () => {
     setOpen(false);
   };
 
-useEffect(() => {
-  getCurrentModel();
-}, []);
-  
+  useEffect(() => {
+    getCurrentModel();
+  }, []);
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const existing = await getModelsByProvider(provider);
+        if (Array.isArray(existing)) setModels(existing);
+      } catch (err) {
+        console.error("Failed to fetch provider models:", err);
+      }
+    };
+    fetchModels();
+  }, [provider, getModelsByProvider]);
 
   return (
     <header className="glass-card sticky top-0 z-50 border-b border-gray-200/50 dark:border-gray-700/50">
@@ -120,25 +140,32 @@ useEffect(() => {
                       <option value="openai">OpenAI</option>
                       <option value="deepseek">DeepSeek</option>
                       <option value="gemini">Gemini</option>
-                       <option value="openai">OpenAI</option>
-                      <option value="deepseek">DeepSeek</option>
-                      <option value="gemini">Gemini</option>
                     </select>
 
                     {/* Model */}
                     <label className="block text-xs text-gray-500 dark:text-gray-400 mt-2 mb-1">
                       Model Name
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
-                      placeholder="gpt-4o-mini"
                       className="w-full text-sm px-2 py-1.5 rounded-md
-                       bg-gray-100 dark:bg-gray-800
-                       text-gray-800 dark:text-gray-200
-                       focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    />
+             bg-gray-100 dark:bg-gray-800
+             text-gray-800 dark:text-gray-200
+             focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      {models.length > 0 ? (
+                        models.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="" disabled>
+                          No models available
+                        </option>
+                      )}
+                    </select>
 
                     {/* Save */}
                     <div className="flex justify-end mt-3">
@@ -161,12 +188,22 @@ useEffect(() => {
             <button
               onClick={() => setIsOpenApiKeyModal(!isOpenApiKeyModal)}
               // className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-               className="p-1.5 rounded-full
+              className="p-1.5 rounded-full
                text-gray-600 dark:text-gray-300
                hover:bg-gray-200 dark:hover:bg-gray-700"
               title="API Key Management"
             >
               <KeyRound className="h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-primary-500" />
+            </button>
+
+            <button
+              onClick={() => setIsOpenProviderModal(!isOpenProviderModal)}
+              className="p-1.5 rounded-full
+             text-gray-600 dark:text-gray-300
+             hover:bg-gray-200 dark:hover:bg-gray-700"
+              title="Provider Models Management"
+            >
+              <Layers className="h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-primary-500" />
             </button>
           </div>
         </div>

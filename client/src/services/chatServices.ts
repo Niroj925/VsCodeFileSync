@@ -10,7 +10,7 @@ export const chatService = {
     const data = await api.post<any>(
       '/api/chat/send',
       payload,
-      { timeout: 30000 }
+      { timeout: 120000 }
     );
 
     return data;

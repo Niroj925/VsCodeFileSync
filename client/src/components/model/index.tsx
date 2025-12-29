@@ -1,15 +1,29 @@
 import { useProjectContext } from "../../contexts/ProjectContext";
 import ApiKeyModal from "./ApiKeyModel";
+import ProviderModel from "./ProviderModel";
 
 const Model: React.FC = () => {
-  const { isOpenApiKeyModal, setIsOpenApiKeyModal } = useProjectContext();
+  const {
+    isOpenApiKeyModal,
+    isOpenProviderModal,
+    setIsOpenProviderModal,
+    setIsOpenApiKeyModal,
+  } = useProjectContext();
 
   return (
     <div>
-      <ApiKeyModal
-        open={isOpenApiKeyModal}
-        onClose={() => setIsOpenApiKeyModal(false)}
-      />
+      {isOpenApiKeyModal && (
+        <ApiKeyModal
+          open={isOpenApiKeyModal}
+          onClose={() => setIsOpenApiKeyModal(false)}
+        />
+      )}
+      {isOpenProviderModal && (
+        <ProviderModel
+          open={isOpenProviderModal}
+          onClose={() => setIsOpenProviderModal(false)}
+        />
+      )}
     </div>
   );
 };

@@ -1,10 +1,10 @@
-import type { CurrentModel } from '../interface';
-import type { FileContent, FileItem, Project, SearchResult } from '../types';
-import api from './api';
+import type { CurrentModel } from "../interface";
+import type { FileContent, FileItem, Project, SearchResult } from "../types";
+import api from "./api";
 
 export const projectService = {
   getProjects: async (): Promise<Project[]> => {
-    const data = await api.get<{ projects: Project[] }>('/api/project/all');
+    const data = await api.get<{ projects: Project[] }>("/api/project/all");
     return data.projects;
   },
 
@@ -15,17 +15,13 @@ export const projectService = {
     return data.files;
   },
 
-  searchFiles: async (
-    query: string,
-    project = ''
-  ): Promise<SearchResult[]> => {
+  searchFiles: async (query: string, project = ""): Promise<SearchResult[]> => {
     const params: Record<string, string> = { query };
     if (project) params.project = project;
 
-    const data = await api.get<{ results: SearchResult[] }>(
-      '/api/search',
-      { params }
-    );
+    const data = await api.get<{ results: SearchResult[] }>("/api/search", {
+      params,
+    });
 
     return data.results;
   },
@@ -34,43 +30,55 @@ export const projectService = {
     project: string,
     filePath: string
   ): Promise<FileContent> => {
-    const data = await api.get<{ file: FileContent }>(
-      '/api/file/content',
-      { params: { project, filePath } }
-    );
+    const data = await api.get<{ file: FileContent }>("/api/file/content", {
+      params: { project, filePath },
+    });
     return data.file;
   },
 
   syncProject: async (projectName: string): Promise<void> => {
-    await api.post<void>('/api/project/sync', { projectName });
+    await api.post<void>("/api/project/sync", { projectName });
   },
 
   getCurrentModel: async (): Promise<CurrentModel | null> => {
     const data = await api.get<{ model: CurrentModel | null }>(
-      '/api/project/get-model'
+      "/api/project/get-model"
     );
     return data.model ?? null;
   },
 
-  saveModel: async (
-    provider: string,
-    model: string
-  ): Promise<CurrentModel> => {
+  saveModel: async (provider: string, model: string): Promise<CurrentModel> => {
     const data = await api.post<{ model: CurrentModel }>(
-      '/api/project/save-model',
+      "/api/project/save-model",
       { provider, model }
     );
 
     return data.model ?? { provider, model };
   },
 
-    saveApiKey: async (
-    provider: string,
-    apiKey: string
-  ): Promise<void> => {
-    await api.post<void>('/api/project/save-key', {
+  saveApiKey: async (provider: string, apiKey: string): Promise<void> => {
+    await api.post<void>("/api/project/save-key", {
       provider,
       apiKey,
     });
+  },
+
+  saveProviderModel: async (
+    provider: string,
+    models: string[]
+  ): Promise<void> => {
+    await api.post<void>("/api/project/save-provider-models", {
+      provider,
+      models,
+    });
+  },
+
+  getProviderModels: async (provider: string): Promise<string[]> => {
+    const response = await api.get<{
+      success: boolean;
+      provider: string;
+      models: string[];
+    }>(`/api/project/get-provider-models?provider=${provider}`);
+    return response.models;
   },
 };

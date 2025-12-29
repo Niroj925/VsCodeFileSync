@@ -3,6 +3,8 @@ import fileService from "../services/file.service";
 import { saveApiKey } from "../utils/store-api-key";
 import { saveCurrentModelProvider } from "../utils/store-used-model";
 import { getCurrentModelProvider } from "../utils/get-current-model";
+import { getModelsByProvider, saveModel } from "../utils/store-provider-models";
+import { get } from "node:http";
 
 export const syncProject = (req: Request, res: Response): void => {
   try {
@@ -56,6 +58,58 @@ export const saveKey = (req: Request, res: Response) => {
     });
   }
 };
+
+export const saveProviderModels = (req: Request, res: Response) => {
+  try {
+    const { provider, models } = req.body;
+    if (!provider || !models) {
+      return res.status(400).json({
+        success: false,
+        error: "Provider and models are required",
+      });
+    }
+
+    saveModel(provider, models);
+
+    res.json({
+      success: true,
+      message: `Models for ${provider} saved successfully`,
+    });
+  } catch (error) {
+    console.error("Save provider models error:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const getProviderModels = (req: Request, res: Response) => {
+  try {
+    const provider = req.query.provider as string;
+
+    if (!provider) {
+      return res.status(400).json({
+        success: false,
+        error: "Provider is required",
+      });
+    }
+
+    const models = getModelsByProvider(provider);
+
+    res.json({
+      success: true,
+      provider,
+      models,
+    });
+  } catch (error) {
+    console.error("Get provider models error:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+}
 
 export const saveCurrentModel = (req: Request, res: Response) => {
   try {
@@ -157,4 +211,5 @@ export const getProjectFiles = (req: Request, res: Response): void => {
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }
-};
+}
+

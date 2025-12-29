@@ -9,7 +9,6 @@ import type {
 import type { ChatResponseData } from "../types/chat";
 
 export interface ProjectContextType {
-  // State
   projects: Project[];
   selectedProject: string;
   selectedFile: FileContent | null;
@@ -21,8 +20,8 @@ export interface ProjectContextType {
   stats: ReturnType<typeof useStats>["stats"];
   loading: boolean;
   isOpenApiKeyModal: boolean;
+  isOpenProviderModal: boolean;
 
-  // Actions
   setSelectedProject: React.Dispatch<React.SetStateAction<string>>;
   setSelectedFile: React.Dispatch<React.SetStateAction<FileContent | null>>;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
@@ -30,8 +29,8 @@ export interface ProjectContextType {
   setIsSyncing: React.Dispatch<React.SetStateAction<boolean>>;
   setCopied: React.Dispatch<React.SetStateAction<boolean>>;
   setIsOpenApiKeyModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsOpenProviderModal: React.Dispatch<React.SetStateAction<boolean>>;
 
-  // Functions
   loadProjects: () => Promise<Project[]>;
   handleProjectSelect: (projectName: string) => void;
   handleFileSelect: (project: string, filePath: string) => Promise<void>;

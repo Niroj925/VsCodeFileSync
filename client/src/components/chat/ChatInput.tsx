@@ -4,7 +4,7 @@ import { useProjectContext } from "../../contexts/ProjectContext";
 import { useChatApi } from "../../hooks/useChatApi";
 
 const ChatInput: React.FC = () => {
-  const { selectedItems, removeItem, addChatResponse, clearSelectedItems,setSelectedFile } =
+  const { selectedItems, removeItem, addChatResponse, clearSelectedItems, setSelectedFile } =
     useProjectContext();
   const [input, setInput] = useState("");
   const { sendMessage, isLoading, error, clearError } = useChatApi();
@@ -15,31 +15,59 @@ const ChatInput: React.FC = () => {
     try {
       const apiResponse = await sendMessage(input, selectedItems);
 
-      if (apiResponse?.data) {
-        const assistantData = apiResponse.data as {
-          message: string;
-          files: { path: string; content: string }[];
-        };
-
+      if (apiResponse?.success) {
         addChatResponse({
-          message: assistantData.message,
-          files: assistantData.files,
+          llmResponse: apiResponse,
         });
-        clearSelectedItems();
-        setSelectedFile(null);
-        setInput("");
+      } else {
+        // If the response doesn't have the expected format, create a fallback
+        addChatResponse({
+          llmResponse: {
+            success: true,
+            query: input,
+            provider: "system",
+            model: "fallback",
+            timestamp: new Date(),
+            blocks: [
+              { type: "text", content: "Received an unexpected response format." }
+            ]
+          }
+        });
       }
+
+      clearSelectedItems();
+      setSelectedFile(null);
+      setInput("");
     } catch (err) {
       console.error("Chat submit error:", err);
+      addChatResponse({
+        llmResponse: {
+          success: false,
+          query: input,
+          provider: "system",
+          model: "error",
+          timestamp: new Date(),
+          blocks: [
+            { type: "text", content: "Error: Failed to get response from the assistant." }
+          ]
+        }
+      });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
     }
   };
 
   return (
     <div className="border-t border-gray-200/50 dark:border-gray-700/50 bg-gray-50/70 dark:bg-gray-700 p-3 rounded-2xl m-2">
       {error && (
-        <div className="mb-3 p-2 text-sm text-red-600 bg-red-50 rounded-lg flex justify-between">
+        <div className="mb-3 p-2 text-sm text-red-600 bg-red-50 rounded-lg flex justify-between items-center">
           <span>{error}</span>
-          <button onClick={clearError}>
+          <button onClick={clearError} className="hover:text-red-700">
             <X size={14} />
           </button>
         </div>
@@ -60,27 +88,35 @@ const ChatInput: React.FC = () => {
               <span className="truncate max-w-[160px] text-gray-700 dark:text-gray-300">
                 {item.path}
               </span>
-              <button onClick={() => removeItem(item)}>
-                <X
-                  className="text-gray-600 dark:text-gray-400 hover:text-red-500 "
-                  size={16}
-                />
+              <button 
+                onClick={() => removeItem(item)}
+                className="text-gray-500 hover:text-red-500"
+              >
+                <X size={16} />
               </button>
             </div>
           ))}
         </div>
       )}
 
-      <div className="flex items-center gap-2 ">
+      <div className="flex items-center gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+          onKeyDown={handleKeyDown}
           placeholder={isLoading ? "Sending..." : "Ask something…"}
           disabled={isLoading}
           className="flex-1 bg-transparent outline-none text-sm text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
         />
-        <button onClick={handleSubmit} disabled={isLoading}>
+        <button 
+          onClick={handleSubmit} 
+          disabled={isLoading || (!input.trim() && selectedItems.length === 0)}
+          className={`p-2 rounded-full transition-colors ${
+            isLoading || (!input.trim() && selectedItems.length === 0)
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+          }`}
+        >
           {isLoading ? (
             <Loader2 size={16} className="animate-spin" />
           ) : (
@@ -93,4 +129,3 @@ const ChatInput: React.FC = () => {
 };
 
 export default ChatInput;
-

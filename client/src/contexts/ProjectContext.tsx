@@ -38,6 +38,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isSyncing, setIsSyncing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isOpenApiKeyModal, setIsOpenApiKeyModal] = useState(false);
+  const [isOpenProviderModal, setIsOpenProviderModal] = useState(false);
 
   const [socketConnected, setSocketConnected] = useState<boolean>(false);
   const [chatResponse, setChatResponse] = useState<ChatResponseData[]>([]);
@@ -251,6 +252,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     stats,
     loading: projectsLoading || searchLoading,
     isOpenApiKeyModal,
+    isOpenProviderModal,
 
     setSelectedProject,
     setSelectedFile,
@@ -259,6 +261,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsSyncing,
     setCopied,
     setIsOpenApiKeyModal,
+    setIsOpenProviderModal,
 
     loadProjects: originalLoadProjects,
     handleProjectSelect,
