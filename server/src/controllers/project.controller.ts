@@ -4,7 +4,7 @@ import { saveApiKey } from "../utils/store-api-key";
 import { saveCurrentModelProvider } from "../utils/store-used-model";
 import { getCurrentModelProvider } from "../utils/get-current-model";
 import { getModelsByProvider, saveModel } from "../utils/store-provider-models";
-import { get } from "node:http";
+import llmConfig from "../config/llm-config";
 
 export const syncProject = (req: Request, res: Response): void => {
   try {
@@ -45,7 +45,6 @@ export const saveKey = (req: Request, res: Response) => {
     }
 
     saveApiKey(provider, apiKey);
-
     res.json({
       success: true,
       message: `API key for ${provider} saved successfully`,
@@ -109,7 +108,7 @@ export const getProviderModels = (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }
-}
+};
 
 export const saveCurrentModel = (req: Request, res: Response) => {
   try {
@@ -122,7 +121,7 @@ export const saveCurrentModel = (req: Request, res: Response) => {
     }
 
     saveCurrentModelProvider(provider, model);
-
+    llmConfig.reloadConfig();
     res.json({
       success: true,
       message: `Model provider for ${provider} saved successfully`,
@@ -135,7 +134,6 @@ export const saveCurrentModel = (req: Request, res: Response) => {
     });
   }
 };
-
 
 export const getCurrentModel = (_req: Request, res: Response): void => {
   try {
@@ -170,8 +168,6 @@ export const getProjects = (_req: Request, res: Response): void => {
     });
   }
 };
-
-
 
 export const getProjectFiles = (req: Request, res: Response): void => {
   try {
@@ -211,5 +207,4 @@ export const getProjectFiles = (req: Request, res: Response): void => {
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }
-}
-
+};

@@ -64,8 +64,7 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
         };
 
         const llmResponse = await llmService.processChat(chatRequest);
-        console.log("LLM Response:", llmResponse);
-        // Send LLM response back to client
+        // console.log("LLM Response:", llmResponse);
         res.json(llmResponse);
         
       } catch (llmError) {

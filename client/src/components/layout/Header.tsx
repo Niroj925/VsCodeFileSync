@@ -30,8 +30,8 @@ const Header: React.FC = () => {
     useProviderModel();
 
   const [open, setOpen] = useState(false);
-  const [provider, setProvider] = useState("openai");
-  const [model, setModel] = useState("gpt-4o-mini");
+  const [provider, setProvider] = useState("deepseek");
+  const [model, setModel] = useState("deepseek-coder");
 
   const handleSave = () => {
     if (!model.trim()) return;

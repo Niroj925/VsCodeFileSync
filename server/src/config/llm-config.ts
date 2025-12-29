@@ -45,6 +45,10 @@ class LLMConfig {
     }
   }
 
+  reloadConfig(): void {
+    this.loadConfig();
+  }
+
   getConfig(): LLMConfiguration {
     return this.config;
   }
@@ -66,6 +70,8 @@ class LLMConfig {
     const provider = this.getProvider(providerName);
     return provider?.models || [];
   }
+
+  
 }
 
 export default new LLMConfig();
