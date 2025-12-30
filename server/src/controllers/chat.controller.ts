@@ -4,7 +4,6 @@ import path from "path";
 import fs from "fs-extra";
 import { getStoredProjectDirectory } from "../utils/get-directory";
 import llmService from "../services/llm.service";
-import { PromptUtils } from "../utils/prompt.utils";
 
 export const sendChat = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -19,14 +18,12 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Collect file contents
     const flatFiles: Array<{ path: string; content: string; type?: 'file' | 'folder' | 'project' }> = [];
 
     for (const item of files) {
       const fullPath = path.join(projectDirectory, item.path);
 
       try {
-        // Handle folder
         if (item.type === "folder") {
           const folderFiles = await getAllFilesInFolder(fullPath, item.path);
           for (const file of folderFiles) {
@@ -37,7 +34,6 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
           }
         }
 
-        // Handle single file
         if (item.type === "file") {
           const content = await fs.readFile(fullPath, "utf8");
           flatFiles.push({
@@ -54,7 +50,6 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
       }
     }
 
-    // If useLLM is true, process with LLM
     if (useLLM && message.trim()) {
       try {
         const chatRequest = {
@@ -70,7 +65,6 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
       } catch (llmError) {
         console.error("LLM processing error:", llmError);
         
-        // Fallback to regular response if LLM fails
         res.json({
           success: true,
           data: { 
@@ -81,7 +75,6 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
         });
       }
     } else {
-      // Regular response without LLM
       res.json({
         success: true,
         data: { message, files: flatFiles },
@@ -96,59 +89,4 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-/**
- * Get LLM provider information
- */
-export const getLLMInfo = async (_req: Request, res: Response): Promise<void> => {
-  try {
-    const currentProvider = llmService.getCurrentProviderInfo();
-    const availableProviders = llmService.getAvailableProviders();
-    // const providerHealth = await llmService.getProviderHealth();
-    
-    res.json({
-      success: true,
-      currentProvider,
-      availableProviders,
-      // providerHealth,
-      configSource: "data/llm-config.json"
-    });
-  } catch (error) {
-    console.error("Get LLM info error:", error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
-};
 
-/**
- * Test LLM provider
- */
-export const testLLMProvider = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { provider } = req.body;
-    
-    if (!provider) {
-      res.status(400).json({
-        success: false,
-        error: "Provider name is required"
-      });
-      return;
-    }
-    
-    // const isWorking = await llmService.testProvider(provider);
-    
-    res.json({
-      success: true,
-      provider,
-      // working: isWorking,
-      // message: isWorking ? "Provider is working correctly" : "Provider test failed"
-    });
-  } catch (error) {
-    console.error("Test LLM provider error:", error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
-};

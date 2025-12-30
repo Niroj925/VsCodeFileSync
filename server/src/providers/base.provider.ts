@@ -12,9 +12,7 @@ export abstract class BaseLLMProvider {
   
   abstract sendMessage(request: LLMRequest): Promise<string>;
   
-  /**
-   * Format error message
-   */
+
   protected formatError(error: any): string {
     if (error.response?.data?.error?.message) {
       return error.response.data.error.message;
@@ -25,12 +23,8 @@ export abstract class BaseLLMProvider {
     return 'Unknown error occurred';
   }
   
-  /**
-   * Truncate prompt if too long
-   */
   protected truncatePrompt(prompt: string, maxTokens: number = 8000): string {
-    // Simple truncation - in production you might want smarter truncation
-    const maxLength = maxTokens * 4; // Rough estimate: 1 token ≈ 4 characters
+    const maxLength = maxTokens * 4; 
     if (prompt.length <= maxLength) return prompt;
     
     return prompt.substring(0, maxLength) + '\n\n[Content truncated due to length]';

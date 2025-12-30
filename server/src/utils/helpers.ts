@@ -1,8 +1,8 @@
-import fs from 'fs-extra';
-import path from 'path';
+import fs from "fs-extra";
+import path from "path";
 
 export async function getAllFilesInFolder(
-  folderPath: string, 
+  folderPath: string,
   basePath = ""
 ): Promise<Array<{ path: string; content: string; size: number }>> {
   const files: Array<{ path: string; content: string; size: number }> = [];
@@ -29,7 +29,6 @@ export async function getAllFilesInFolder(
             size: content.length,
           });
         } catch (e) {
-          // Skip binary files
           console.log(`Skipping binary file: ${relativePath}`);
         }
       }
@@ -41,7 +40,11 @@ export async function getAllFilesInFolder(
   return files;
 }
 
-export function getSnippet(content: string, query: string, context = 100): string {
+export function getSnippet(
+  content: string,
+  query: string,
+  context = 100
+): string {
   const index = content.toLowerCase().indexOf(query.toLowerCase());
 
   if (index === -1) return "";
@@ -55,4 +58,50 @@ export function getSnippet(content: string, query: string, context = 100): strin
   if (end < content.length) snippet = snippet + "...";
 
   return snippet;
+}
+
+export function getLanguageFromPath(path: string): string {
+  const ext = path.split(".").pop()?.toLowerCase();
+
+  switch (ext) {
+    case "ts":
+      return "typescript";
+    case "js":
+      return "javascript";
+    case "tsx":
+      return "typescript";
+    case "jsx":
+      return "javascript";
+    case "py":
+      return "python";
+    case "java":
+      return "java";
+    case "cpp":
+      return "cpp";
+    case "cs":
+      return "csharp";
+    case "go":
+      return "go";
+    case "rb":
+      return "ruby";
+    case "php":
+      return "php";
+    case "rs":
+      return "rust";
+    case "html":
+      return "html";
+    case "css":
+      return "css";
+    case "scss":
+      return "scss";
+    case "json":
+      return "json";
+    case "md":
+      return "markdown";
+    case "yml":
+    case "yaml":
+      return "yaml";
+    default:
+      return "text";
+  }
 }

@@ -9,7 +9,6 @@ interface CurrentModelProvider {
 export function getCurrentModelProvider(): CurrentModelProvider | null {
   const dataFile = path.join(process.cwd(), "data", "data.json");
 
-  // If file does not exist, return null
   if (!fs.existsSync(dataFile)) {
     return null;
   }

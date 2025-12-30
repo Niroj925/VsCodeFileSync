@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import fileService from "../services/file.service";
 import { saveApiKey } from "../utils/store-api-key";
-import { saveCurrentModelProvider } from "../utils/store-used-model";
+import { saveCurrentModelProvider } from "../utils/store-current-model";
 import { getCurrentModelProvider } from "../utils/get-current-model";
 import { getModelsByProvider, saveModel } from "../utils/store-provider-models";
 import llmConfig from "../config/llm-config";
@@ -16,14 +16,13 @@ export const syncProject = (req: Request, res: Response): void => {
       });
       return;
     }
-
-    const project = fileService.syncProject(projectName, files, srcFolder);
+    fileService.syncProject(projectName, files, srcFolder);
 
     res.json({
       success: true,
       message: `Project ${projectName} synced successfully`,
       fileCount: files.length,
-      frontendUrl: "http://localhost:3000",
+      // frontendUrl: "http://localhost:3000",
     });
   } catch (error) {
     console.error("Sync error:", error);
@@ -141,7 +140,7 @@ export const getCurrentModel = (_req: Request, res: Response): void => {
 
     res.json({
       success: true,
-      model: currentModel, // can be null if not set
+      model: currentModel,
     });
   } catch (error) {
     console.error("Get current model error:", error);

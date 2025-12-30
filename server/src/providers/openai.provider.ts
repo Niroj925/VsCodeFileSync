@@ -9,6 +9,8 @@ export class OpenAIProvider extends BaseLLMProvider {
   
   private client: OpenAI;
 
+  
+
   constructor(config: LLMProviderConfig) {
     super();
     this.apiKey = config.apiKey;
@@ -22,7 +24,6 @@ export class OpenAIProvider extends BaseLLMProvider {
 
   async sendMessage(request: LLMRequest): Promise<string> {
     try {
-      // Truncate prompt if needed
       const truncatedPrompt = this.truncatePrompt(request.prompt, request.maxTokens);
       
       const response = await this.client.chat.completions.create({

@@ -13,14 +13,12 @@ export function saveCurrentModelProvider(
   const dataDir = path.join(process.cwd(), "data");
   const dataFile = path.join(dataDir, "data.json");
 
-  // Ensure data directory exists
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
   let jsonData: Record<string, any> = {};
 
-  // Read existing data.json if exists
   if (fs.existsSync(dataFile)) {
     try {
       const fileContent = fs.readFileSync(dataFile, "utf8");
@@ -31,12 +29,10 @@ export function saveCurrentModelProvider(
     }
   }
 
-  // Set or update currentModelProvider object
   jsonData.currentModelProvider = {
     provider,
     model,
   } satisfies CurrentModelProvider;
 
-  // Write back to data.json
   fs.writeFileSync(dataFile, JSON.stringify(jsonData, null, 2), "utf8");
 }

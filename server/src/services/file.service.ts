@@ -7,7 +7,6 @@ class FileService {
   private projects: Record<string, Project> = {};
   private fileIndex: Record<string, FileData[]> = {};
 
-  // Project operations
   syncProject(projectName: string, files: FileData[], srcFolder: string): Project {
     const project: Project = {
       name: projectName,
@@ -22,7 +21,6 @@ class FileService {
     
     
     saveProjectDirectory(srcFolder);
-    // Emit WebSocket event
     const io = getIO();
     io.emit('projectSynced', { projectName, fileCount: files.length });
     
@@ -41,7 +39,6 @@ class FileService {
     }));
   }
 
-  // File operations
   createFile(fileData: { path: string; relativePath: string; content: string; size: number; lastModified: Date }): void {
     Object.values(this.projects).forEach((project) => {
       project.files.push({
@@ -52,7 +49,6 @@ class FileService {
         lastModified: fileData.lastModified,
       });
 
-      // Emit WebSocket event
       const io = getIO();
       io.emit('fileCreated', {
         project: project.name,
@@ -65,9 +61,7 @@ class FileService {
   }
 
   createFolder(relativePath: string): void {
-    // Note: We need to add folder tracking logic if needed
     Object.values(this.projects).forEach((project) => {
-      // Emit WebSocket event
       const io = getIO();
       io.emit('folderCreated', {
         project: project.name,
@@ -84,7 +78,6 @@ class FileService {
         file.size = fileData.size;
         file.lastModified = fileData.lastModified;
 
-        // Emit WebSocket event
         const io = getIO();
         io.emit('fileUpdated', {
           project: project.name,
@@ -101,7 +94,6 @@ class FileService {
     Object.values(this.projects).forEach((project) => {
       project.files = project.files.filter((f) => f.fullPath !== filePath);
 
-      // Emit WebSocket event
       const io = getIO();
       io.emit('fileDeleted', {
         project: project.name,
@@ -117,7 +109,6 @@ class FileService {
     return project.files.find(f => f.path === filePath) || null;
   }
 
-  // Search operations
   searchFiles(query: string, projectName?: string): Array<any> {
     const results: any[] = [];
 
@@ -145,7 +136,6 @@ class FileService {
     return results;
   }
 
-  // Private methods
   private updateFileIndex(projectName: string, files: FileData[]): void {
     this.fileIndex[projectName] = files.map(file => ({
       ...file,

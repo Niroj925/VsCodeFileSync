@@ -51,40 +51,31 @@ export class GeminiProvider extends BaseLLMProvider {
 
 
   private formatGeminiError(error: any): string {
-    // Check for authentication errors
     if (error.status === 401 || error.status === 403) {
       return "Invalid API key. Please check your Gemini API key in the configuration.";
     }
     
-    // Check for quota/rate limit errors
     if (error.status === 429) {
       return "Rate limit exceeded. Please try again later or check your quota.";
     }
     
-    // Check for model not found
     if (error.message?.includes("not found") || error.message?.includes("model")) {
       return `Model not available. Please check if '${this.getCurrentModel()}' is a valid Gemini model.`;
     }
     
-    // Default error formatting
     return this.formatError(error);
   }
 
-  /**
-   * Get current model from config
-   */
   private getCurrentModel(): string {
     const current = llmConfig.getCurrentProvider();
     return current.model || "gemini-2.5-flash";
   }
 
-  /**
-   * Test connection to Gemini
-   */
+
   async testConnection(): Promise<boolean> {
     try {
       const testResponse = await this.ai.models.generateContent({
-        model: "gemini-2.5-flash", // Use a lightweight model for testing
+        model: "gemini-2.5-flash", 
         contents: "Hello, please respond with 'OK' if you are working.",
         config: {
           maxOutputTokens: 10,
