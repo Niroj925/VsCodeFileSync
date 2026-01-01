@@ -38,18 +38,24 @@ export const useChatApi = () => {
       };
 
       try {
-        console.log('📤 [useChatApi] Sending:', {
-          message: payload.message,
-          fileCount: files.length,
-          requestId: payload.requestId,
-        });
+        // console.log('📤 [useChatApi] Sending:', {
+        //   message: payload.message,
+        //   fileCount: files.length,
+        //   requestId: payload.requestId,
+        // });
 
         const data = await chatService.sendChatMessage(payload);
 
-        console.log('✅ [useChatApi] Response received:', {
-          requestId: payload.requestId,
-          data,
-        });
+        // console.log('✅ [useChatApi] Response received:', {
+        //   requestId: payload.requestId,
+        //   data,
+        // });
+        if(data.success === false) {
+          const msg = data.error.message || 'Failed to get response from chat service';
+          setError(msg);
+          showToast('error', msg);
+          return
+        }
 
         return {
           ...data,
@@ -62,7 +68,7 @@ export const useChatApi = () => {
           err?.response?.data?.message ||
           err?.message ||
           'Failed to send message';
-
+console.log('error message:', message);
         setError(message);
         showToast('error', message);
         throw err;

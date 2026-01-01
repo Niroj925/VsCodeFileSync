@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs-extra";
 import { getStoredProjectDirectory } from "../utils/get-directory";
 import llmService from "../services/llm.service";
+import { error } from "console";
 
 export const sendChat = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -64,14 +65,11 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
         
       } catch (llmError) {
         console.error("LLM processing error:", llmError);
-        
         res.json({
-          success: true,
-          data: { 
-            message, 
-            files: flatFiles,
-            note: "LLM service unavailable, returning files only"
-          },
+          success: false,
+          error:{
+            message: llmError instanceof Error ? llmError.message : "Unknown LLM error"
+          }
         });
       }
     } else {

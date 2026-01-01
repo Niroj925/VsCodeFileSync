@@ -26,7 +26,7 @@ const Header: React.FC = () => {
 
   const [models, setModels] = useState<string[]>([]);
 
-  const { getModelsByProvider, isLoading, error, clearError } =
+  const { getModelsByProvider } =
     useProviderModel();
 
   const [open, setOpen] = useState(false);
@@ -43,17 +43,28 @@ const Header: React.FC = () => {
     getCurrentModel();
   }, []);
 
-  useEffect(() => {
-    const fetchModels = async () => {
-      try {
-        const existing = await getModelsByProvider(provider);
-        if (Array.isArray(existing)) setModels(existing);
-      } catch (err) {
-        console.error("Failed to fetch provider models:", err);
+useEffect(() => {
+  const fetchModels = async () => {
+    try {
+      const existing = await getModelsByProvider(provider);
+
+      if (Array.isArray(existing) && existing.length > 0) {
+        setModels(existing);
+
+        setModel(existing[0]);
+      } else {
+        setModels([]);
+        setModel("");
       }
-    };
-    fetchModels();
-  }, [provider, getModelsByProvider]);
+    } catch (err) {
+      console.error("Failed to fetch provider models:", err);
+      setModels([]);
+      setModel("");
+    }
+  };
+
+  fetchModels();
+}, [provider, getModelsByProvider]);
 
   return (
     <header className="glass-card sticky top-0 z-50 border-b border-gray-200/50 dark:border-gray-700/50">
@@ -137,7 +148,7 @@ const Header: React.FC = () => {
                        text-gray-800 dark:text-gray-200
                        focus:outline-none focus:ring-1 focus:ring-primary-500"
                     >
-                      <option value="openai">OpenAI</option>
+                      <option value="openai" >OpenAI</option>
                       <option value="deepseek">DeepSeek</option>
                       <option value="gemini">Gemini</option>
                     </select>

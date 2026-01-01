@@ -112,6 +112,7 @@ export const getProviderModels = (req: Request, res: Response) => {
 export const saveCurrentModel = (req: Request, res: Response) => {
   try {
     const { provider, model } = req.body;
+    console.log('provider, model:',provider, model);
     if (!provider || !model) {
       return res.status(400).json({
         success: false,

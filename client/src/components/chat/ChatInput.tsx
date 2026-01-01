@@ -7,31 +7,16 @@ const ChatInput: React.FC = () => {
   const { selectedItems, removeItem, addChatResponse, clearSelectedItems, setSelectedFile } =
     useProjectContext();
   const [input, setInput] = useState("");
-  const { sendMessage, isLoading, error, clearError } = useChatApi();
+  const { sendMessage, isLoading } = useChatApi();
 
   const handleSubmit = async () => {
     if ((!input.trim() && selectedItems.length === 0) || isLoading) return;
 
     try {
       const apiResponse = await sendMessage(input, selectedItems);
-
       if (apiResponse?.success) {
         addChatResponse({
           llmResponse: apiResponse,
-        });
-      } else {
-        // If the response doesn't have the expected format, create a fallback
-        addChatResponse({
-          llmResponse: {
-            success: true,
-            query: input,
-            provider: "system",
-            model: "fallback",
-            timestamp: new Date(),
-            blocks: [
-              { type: "text", content: "Received an unexpected response format." }
-            ]
-          }
         });
       }
 
@@ -64,15 +49,6 @@ const ChatInput: React.FC = () => {
 
   return (
     <div className="border-t border-gray-200/50 dark:border-gray-700/50 bg-gray-50/70 dark:bg-gray-700 p-3 rounded-2xl m-2">
-      {error && (
-        <div className="mb-3 p-2 text-sm text-red-600 bg-red-50 rounded-lg flex justify-between items-center">
-          <span>{error}</span>
-          <button onClick={clearError} className="hover:text-red-700">
-            <X size={14} />
-          </button>
-        </div>
-      )}
-
       {selectedItems.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-1">
           {selectedItems.map((item) => (
