@@ -1,4 +1,4 @@
-// llm.service.ts - Corrected version
+// llm.service.ts - Updated with correct parsing
 import { ChatBlock, ChatRequest, LLMResponse } from "../types";
 import { OpenAIProvider } from "../providers/openai.provider";
 import { GeminiProvider } from "../providers/gemini.provider";
@@ -64,7 +64,7 @@ class LLMService {
         prompt,
         model,
         temperature: request.options?.temperature ?? 0.7,
-        maxTokens: request.options?.maxTokens ?? 2000,
+        maxTokens: request.options?.maxTokens ?? 3000, // Increased for better responses
       });
 
       // console.log('raw response:', rawResponse);
@@ -125,8 +125,6 @@ class LLMService {
     const parsedBlocks = this.parseStructuredResponse(response);
     blocks.push(...parsedBlocks);
 
-    // REMOVED: All code that shows context files
-    
     return blocks;
   }
 
@@ -135,7 +133,8 @@ class LLMService {
     
     // Check if it's a "no changes" response
     if (response.toLowerCase().includes('no file changes required') ||
-        response.toLowerCase().includes('no changes needed')) {
+        response.toLowerCase().includes('no changes needed') ||
+        response.toLowerCase().includes('no file changes are needed')) {
       blocks.push({
         type: "text",
         content: response.trim(),
@@ -146,8 +145,18 @@ class LLMService {
     // Extract structured sections from LLM response
     const summaryMatch = this.extractSection(response, /## Summary\s*\n([\s\S]*?)(?=\n## |$)/i);
     const analysisMatch = this.extractSection(response, /## Analysis\s*\n([\s\S]*?)(?=\n## |$)/i);
+    const summaryChangesMatch = this.extractSection(response, /## Summary of Changes\s*\n([\s\S]*?)(?=\n## |$)/i);
     const changesMatch = this.extractSection(response, /## Changes\s*\n([\s\S]*?)(?=\n## |$)/i);
-    const fileChangesSection = this.extractSection(response, /## File Changes\s*\n([\s\S]*)$/i);
+    const directoryMatch = this.extractSection(response, /## Directory Structure\s*\n```[^`]*\n([\s\S]*?)```/i);
+    const fileChangesSection = this.extractSection(response, /## File Changes\s*\n([\s\S]*?)(?=\n## |$)/i);
+
+    // Add directory structure if present
+    if (directoryMatch) {
+      blocks.push({
+        type: "file-structure",
+        content: directoryMatch.trim(),
+      });
+    }
 
     // Add summary if present
     if (summaryMatch) {
@@ -165,11 +174,15 @@ class LLMService {
       });
     }
 
-    // Add changes list if present
-    if (changesMatch) {
-      const listItems = changesMatch.trim()
+    // Add changes list if present (multiple possible formats)
+    let changesContent = '';
+    if (summaryChangesMatch) changesContent = summaryChangesMatch;
+    else if (changesMatch) changesContent = changesMatch;
+
+    if (changesContent) {
+      const listItems = changesContent.trim()
         .split('\n')
-        .filter(line => line.trim().startsWith('-') || line.trim().startsWith('*'));
+        .filter(line => line.trim().startsWith('-') || line.trim().startsWith('*') || line.trim().match(/^\d+\./));
       
       if (listItems.length > 0) {
         blocks.push({
@@ -180,23 +193,37 @@ class LLMService {
         // If not a list, add as text
         blocks.push({
           type: "text",
-          content: changesMatch.trim(),
+          content: changesContent.trim(),
         });
       }
     }
 
-    // Parse file changes (code blocks)
+    // Parse file changes (code blocks) - Check multiple patterns
+    let fileBlocks: ChatBlock[] = [];
+    
     if (fileChangesSection) {
-      const fileBlocks = this.extractFileBlocks(fileChangesSection);
-      blocks.push(...fileBlocks);
+      // Parse from structured File Changes section
+      fileBlocks = this.extractFileBlocksFromStructuredSection(fileChangesSection);
     } else {
-      // If no structured file changes, try to extract any code blocks
-      const fallbackBlocks = this.extractAllCodeBlocks(response);
-      blocks.push(...fallbackBlocks);
+      // Try to extract any code blocks from entire response
+      fileBlocks = this.extractFileBlocksFromResponse(response);
+    }
+    
+    // Add warning if we found no file blocks but response indicates changes
+    if (fileBlocks.length === 0 && 
+        (response.toLowerCase().includes('modified file') || 
+         response.toLowerCase().includes('new file') ||
+         response.toLowerCase().includes('### file:'))) {
+      blocks.push({
+        type: "warning",
+        content: "Found references to file changes but couldn't parse them. Please check the response format.",
+      });
+    } else {
+      blocks.push(...fileBlocks);
     }
 
     // If no blocks were created (no structured format), add entire response as text
-    if (blocks.length === 0) {
+    if (blocks.filter(b => b.type !== 'query').length === 0) {
       blocks.push({
         type: "text",
         content: response.trim(),
@@ -208,80 +235,93 @@ class LLMService {
 
   private extractSection(response: string, regex: RegExp): string | null {
     const match = response.match(regex);
-    return match ? match[1] : null;
+    return match ? match[1]?.trim() || null : null;
   }
 
-  private extractFileBlocks(section: string): ChatBlock[] {
+  private extractFileBlocksFromStructuredSection(section: string): ChatBlock[] {
     const blocks: ChatBlock[] = [];
     
-    // Pattern for: ### File: /path/to/file.ext
+    // Pattern for: ### MODIFIED FILE: /path/to/file.ext
+    const modifiedFileRegex = /### MODIFIED FILE:\s*(.+?)\s*\n```(\w+)?\n([\s\S]*?)```/gi;
+    
+    // Pattern for: ### NEW FILE: /path/to/file.ext
+    const newFileRegex = /### NEW FILE:\s*(.+?)\s*\n```(\w+)?\n([\s\S]*?)```/gi;
+    
+    // Also support old format: ### File: /path/to/file.ext
     const fileRegex = /### File:\s*(.+?)(?:\s*\[(NEW|MODIFIED)\])?\s*\n```(\w+)?\n([\s\S]*?)```/gi;
     
     let match;
-    while ((match = fileRegex.exec(section)) !== null) {
+    
+    // Check for MODIFIED FILE format
+    while ((match = modifiedFileRegex.exec(section)) !== null) {
       const filePath = match[1].trim();
-      const modificationType = match[2] || '';
-      const language = match[3]?.toLowerCase() || getLanguageFromPath(filePath) || 'text';
-      const content = match[4].trim();
-      
-      // Add modification type to content if present
-      let displayContent = content;
-      if (modificationType) {
-        displayContent = `// ${modificationType.toUpperCase()}\n${content}`;
-      }
+      const language = match[2]?.toLowerCase() || getLanguageFromPath(filePath) || 'text';
+      const content = match[3].trim();
       
       blocks.push({
         type: "code",
         filePath,
         language,
-        content: displayContent,
+        content: `// MODIFIED\n${content}`,
+      });
+    }
+    
+    // Check for NEW FILE format
+    while ((match = newFileRegex.exec(section)) !== null) {
+      const filePath = match[1].trim();
+      const language = match[2]?.toLowerCase() || getLanguageFromPath(filePath) || 'text';
+      const content = match[3].trim();
+      
+      blocks.push({
+        type: "code",
+        filePath,
+        language,
+        content: `// NEW FILE\n${content}`,
+      });
+    }
+    
+    // Check for old format
+    while ((match = fileRegex.exec(section)) !== null) {
+      const filePath = match[1].trim();
+      const modificationType = match[2] || 'MODIFIED';
+      const language = match[3]?.toLowerCase() || getLanguageFromPath(filePath) || 'text';
+      const content = match[4].trim();
+      
+      blocks.push({
+        type: "code",
+        filePath,
+        language,
+        content: `// ${modificationType.toUpperCase()}\n${content}`,
       });
     }
     
     return blocks;
   }
 
-  private extractAllCodeBlocks(response: string): ChatBlock[] {
+  private extractFileBlocksFromResponse(response: string): ChatBlock[] {
     const blocks: ChatBlock[] = [];
     
-    // Pattern for any code blocks
+    // Look for any code blocks in the response
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
     
+    let match;
     while ((match = codeBlockRegex.exec(response)) !== null) {
-      // Add text before code block
-      const textBefore = response.substring(lastIndex, match.index).trim();
-      if (textBefore) {
-        blocks.push({
-          type: "text",
-          content: textBefore,
-        });
-      }
-      
-      // Extract code block
       const language = match[1] || 'text';
       const content = match[2].trim();
       
-      // Try to guess file path from content (optional)
-      const filePath = this.guessFilePathFromContent(content, language);
+      // Try to extract file path from preceding text
+      const precedingText = response.substring(0, match.index);
+      const fileMatch = precedingText.match(/(?:file|path):\s*([^\s\n`]+\.\w+)/i) ||
+                       precedingText.match(/(?:modified|new) file:\s*([^\s\n`]+\.\w+)/i) ||
+                       precedingText.match(/###\s*([^\s\n`]+\.\w+)/i);
+      
+      const filePath = fileMatch ? fileMatch[1] : this.guessFilePathFromContent(content, language);
       
       blocks.push({
         type: "code",
         filePath: filePath || "unknown",
         language,
         content,
-      });
-      
-      lastIndex = match.index + match[0].length;
-    }
-    
-    // Add any remaining text after last code block
-    const textAfter = response.substring(lastIndex).trim();
-    if (textAfter) {
-      blocks.push({
-        type: "text",
-        content: textAfter,
       });
     }
     
@@ -294,43 +334,37 @@ class LLMService {
     
     // Check for file path hints in comments or strings
     for (const line of lines) {
-      // Look for patterns like: "file: path/to/file.ext"
-      const pathMatch = line.match(/(?:file|path|location):\s*['"]?([\w./-]+\.\w{2,4})['"]?/i);
-      if (pathMatch) {
-        return pathMatch[1];
-      }
-      
-      // Look for import/require statements with file extensions
-      const importMatch = line.match(/(?:import|require|from)\s+['"]([\w./-]+\.\w{2,4})['"]/i);
-      if (importMatch) {
+      // Look for import/export statements that might indicate file structure
+      const importMatch = line.match(/(?:import|export|require|from)\s+['"]([^'"]+)['"]/);
+      if (importMatch && importMatch[1].includes('/')) {
         return importMatch[1];
       }
       
-      // Look for file extensions in the line
-      const extMatch = line.match(/\b[\w./-]+\.(js|ts|jsx|tsx|py|java|go|rs|cpp|c|cs|php|rb|swift|kt)\b/i);
-      if (extMatch) {
-        return extMatch[0];
+      // Look for class/interface names that match file patterns
+      const classMatch = line.match(/(?:class|interface|export\s+class|export\s+interface)\s+(\w+)/);
+      if (classMatch) {
+        const className = classMatch[1];
+        const extensions: Record<string, string> = {
+          'javascript': '.js',
+          'typescript': '.ts',
+          'python': '.py',
+          'java': '.java',
+          'go': '.go',
+          'rust': '.rs',
+          'cpp': '.cpp',
+          'c': '.c',
+          'csharp': '.cs',
+          'php': '.php',
+          'ruby': '.rb',
+          'swift': '.swift',
+          'kotlin': '.kt',
+        };
+        const ext = extensions[language.toLowerCase()] || '.txt';
+        return `${className}${ext}`;
       }
     }
     
-    // Default: create a name based on language
-    const languageNames: Record<string, string> = {
-      'javascript': 'script.js',
-      'typescript': 'script.ts',
-      'python': 'script.py',
-      'java': 'Main.java',
-      'go': 'main.go',
-      'rust': 'main.rs',
-      'cpp': 'main.cpp',
-      'c': 'main.c',
-      'csharp': 'Program.cs',
-      'php': 'script.php',
-      'ruby': 'script.rb',
-      'swift': 'main.swift',
-      'kotlin': 'Main.kt',
-    };
-    
-    return languageNames[language.toLowerCase()] || 'unknown';
+    return null;
   }
 
   getAvailableProviders(): string[] {

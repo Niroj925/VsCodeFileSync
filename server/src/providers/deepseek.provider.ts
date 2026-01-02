@@ -1,7 +1,6 @@
 import { BaseLLMProvider, LLMRequest } from "./base.provider";
 import { LLMProviderConfig } from "../config/llm-config";
 import OpenAI from "openai";
-import e from "express";
 
 export class DeepSeekProvider extends BaseLLMProvider {
   name = "deepseek";
@@ -21,72 +20,75 @@ export class DeepSeekProvider extends BaseLLMProvider {
     });
   }
 
-  async sendMessage(request: LLMRequest): Promise<string> {
-    try {
-      const truncatedPrompt = this.truncatePrompt(
-        request.prompt,
-        request.maxTokens
-      );
+async sendMessage(request: LLMRequest): Promise<string> {
+  try {
+    const truncatedPrompt = this.truncatePrompt(
+      request.prompt,
+      request.maxTokens
+    );
 
-      const response = await this.client.chat.completions.create({
-        model: request.model,
-        messages: [
-          {
-            role: "system",
-            content: `
-              You are CodeBot, an expert software development assistant.
+    const response = await this.client.chat.completions.create({
+      model: request.model,
+      messages: [
+        {
+          role: "system",
+          content: `
+            You are CodeBot, an expert software development assistant.
 
-              ### STRICT RULES (MUST FOLLOW):
-              1. DO NOT invent or infer project folder structure.
-              2. DO NOT show folder trees unless the user EXPLICITLY asks for folder structure.
-              3. DO NOT return full file contents unless:
-                - the file is NEW, or
-                - the file is MODIFIED.
-              4. NEVER reprint unchanged files.
-              5. When modifying files:
-                - Return ONLY the changed file(s).
-                - Use exact file paths provided by the user.
-              6. If creating new files:
-                - Clearly mark them as NEW FILE.
-              7. If no file changes are required:
-                - Say: "No file changes required."
+            ### CRITICAL RULES:
+            1. NEVER invent folder structures - use only paths provided by user
+            2. For NEW files: ALWAYS show directory structure diagram with "(new)" markers
+            3. For MODIFIED files: Return the COMPLETE updated file content
+            4. NEVER reprint unchanged files
+            5. Use EXACT paths as provided
 
-              ### RESPONSE FORMAT (MANDATORY):
-              Use the following structure EXACTLY:
+            ### RESPONSE FORMAT (STRICTLY FOLLOW):
+            If new files created:
+            ## Analysis
+            [Brief explanation]
+            
+            ## Directory Structure
+            \`\`\`
+            [Tree diagram with (new) markers]
+            \`\`\`
+            
+            ## Summary of Changes
+            - [List changes]
+            
+            ## File Changes
+            ### MODIFIED FILE: path/to/file
+            \`\`\`language
+            [Complete updated content]
+            \`\`\`
+            
+            ### NEW FILE: path/to/new/file
+            \`\`\`language
+            [Complete new content]
+            \`\`\`
+            
+            If no new files:
+            [Omit Directory Structure section]
+            
+            If no changes:
+            "No file changes required."
+            
+            Always output in this exact format.
+          `,
+        },
+        {
+          role: "user",
+          content: truncatedPrompt,
+        },
+      ],
+      max_tokens: request.maxTokens || 3000, // Increased for diagrams
+      temperature: request.temperature || 0.7,
+      stream: false,
+    });
 
-              ## Summary
-              Brief explanation of what was done.
-
-              ## Changes
-              - List of modified or new files with reasons.
-
-              ## File Changes
-              For each file:
-              ### File: <exact/path>
-              \`\`\`<language>
-              <ONLY the new or updated content>
-              \`\`\`
-
-              If the user did NOT ask for code changes, do NOT include "File Changes".
-
-              Failure to follow these rules is considered an error.
-              `,
-          },
-          {
-            role: "user",
-            content: truncatedPrompt,
-          },
-        ],
-        max_tokens: request.maxTokens || 2000,
-        temperature: request.temperature || 0.7,
-        stream: false,
-      });
-
-      const content = response.choices[0]?.message?.content || "";
-      return content.trim();
-    } catch (err: any) {
-      // console.error("DeepSeek provider error:", err);
-      throw new Error(err.error.message || `DeepSeek API error: ${this.formatError(err)}`);
-    }
+    const content = response.choices[0]?.message?.content || "";
+    return content.trim();
+  } catch (err: any) {
+    throw new Error(err.error.message || `DeepSeek API error: ${this.formatError(err)}`);
   }
+}
 }
