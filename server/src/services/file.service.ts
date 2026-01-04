@@ -31,6 +31,10 @@ class FileService {
     return this.projects[projectName] || null;
   }
 
+  getProjectInfo(){
+    return this.projects[0];
+  }
+
   getAllProjects(): Array<{ name: string; fileCount: number; lastSynced: Date }> {
     return Object.keys(this.projects).map(name => ({
       name,
@@ -77,7 +81,6 @@ class FileService {
         file.content = fileData.content;
         file.size = fileData.size;
         file.lastModified = fileData.lastModified;
-
         const io = getIO();
         io.emit('fileUpdated', {
           project: project.name,

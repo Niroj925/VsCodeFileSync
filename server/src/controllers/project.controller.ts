@@ -5,10 +5,13 @@ import { saveCurrentModelProvider } from "../utils/store-current-model";
 import { getCurrentModelProvider } from "../utils/get-current-model";
 import { getModelsByProvider, saveModel } from "../utils/store-provider-models";
 import llmConfig from "../config/llm-config";
+import { extractChunks } from "../utils/extract-chunk.utils";
+import { extractChunksFromFiles } from "../utils/extract.chunks";
 
 export const syncProject = (req: Request, res: Response): void => {
   try {
     const { projectName, files, srcFolder } = req.body;
+    // console.log("full project:", req.body);
     if (!projectName || !files || !srcFolder) {
       res.status(400).json({
         success: false,
@@ -17,7 +20,7 @@ export const syncProject = (req: Request, res: Response): void => {
       return;
     }
     fileService.syncProject(projectName, files, srcFolder);
-
+    extractChunksFromFiles(files, srcFolder,projectName);
     res.json({
       success: true,
       message: `Project ${projectName} synced successfully`,
@@ -26,6 +29,22 @@ export const syncProject = (req: Request, res: Response): void => {
     });
   } catch (error) {
     console.error("Sync error:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const extractedChunks = (req: Request, res: Response) => {
+  try {
+    const extractedChunks = extractChunks();
+    res.json({
+      success: true,
+      chunks: extractedChunks,
+    });
+  } catch (error) {
+    console.error("AST extraction error:", error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -112,7 +131,7 @@ export const getProviderModels = (req: Request, res: Response) => {
 export const saveCurrentModel = (req: Request, res: Response) => {
   try {
     const { provider, model } = req.body;
-    console.log('provider, model:',provider, model);
+    console.log("provider, model:", provider, model);
     if (!provider || !model) {
       return res.status(400).json({
         success: false,

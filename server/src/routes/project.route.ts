@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   syncProject,
+  extractedChunks,
   getProjects,
   getProjectFiles,
   saveKey,
@@ -13,6 +14,7 @@ import {
 const router = Router();
 
 router.post("/sync", syncProject);
+router.post("/ast", extractedChunks);
 router.post("/save-key", saveKey);
 router.post("/save-provider-models", saveProviderModels);
 router.get("/get-provider-models", getProviderModels);
