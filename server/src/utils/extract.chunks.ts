@@ -30,7 +30,7 @@ export function extractChunksFromFiles(
       module: 99,
     },
   });
-
+console.log('files length:', files.length); 
   /* ===================== ADD FILES ===================== */
   for (const file of files) {
     const fullPath = path.join(srcFolder, file.path);
@@ -160,8 +160,6 @@ function resolveFullSymbolName(symbol: any): string | null {
     : name;
 }
 
-/* ===================== STORAGE ===================== */
-
 function saveChunks(projectName: string, newChunks: ChunkData[]): void {
   const dataDir = path.join(process.cwd(), "data");
   const dataFile = path.join(dataDir, "chunks.json");
@@ -170,31 +168,52 @@ function saveChunks(projectName: string, newChunks: ChunkData[]): void {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
-  let stored: Record<string, ChunkData[]> = {};
+  let stored: {
+    projectName: string;
+    chunks: ChunkData[];
+  } | null = null;
 
   if (fs.existsSync(dataFile)) {
     try {
       stored = JSON.parse(fs.readFileSync(dataFile, "utf8"));
     } catch {
-      stored = {};
+      stored = null;
     }
   }
 
-  if (!Array.isArray(stored[projectName])) {
-    stored[projectName] = [];
+  /**
+   * 🚨 DIFFERENT PROJECT → RESET EVERYTHING
+   */
+  if (!stored || stored.projectName !== projectName) {
+    fs.writeFileSync(
+      dataFile,
+      JSON.stringify(
+        {
+          projectName,
+          chunks: newChunks,
+        },
+        null,
+        2
+      ),
+      "utf8"
+    );
+    return;
   }
 
+  /**
+   * ✅ SAME PROJECT → UPSERT
+   */
   for (const chunk of newChunks) {
-    const idx = stored[projectName].findIndex(
+    const index = stored.chunks.findIndex(
       (c) =>
         c.symbol === chunk.symbol &&
         c.filePath === chunk.filePath
     );
 
-    if (idx !== -1) {
-      stored[projectName][idx] = chunk;
+    if (index !== -1) {
+      stored.chunks[index] = chunk;
     } else {
-      stored[projectName].push(chunk);
+      stored.chunks.push(chunk);
     }
   }
 
@@ -204,3 +223,5 @@ function saveChunks(projectName: string, newChunks: ChunkData[]): void {
     "utf8"
   );
 }
+
+
