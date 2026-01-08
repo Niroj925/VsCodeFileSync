@@ -1,7 +1,10 @@
 import { FileData, Project } from '../types';
 import { getIO } from '../socket';
+import path from "path";
 
 import { saveProjectDirectory } from '../utils/store-directory';
+import { hasFileChanged } from '../utils/check-file-change.utils';
+import { updateFileChunks } from '../utils/extract-update-file.chunks';
 
 class FileService {
   private projects: Record<string, Project> = {};
@@ -74,24 +77,78 @@ class FileService {
     });
   }
 
-  updateFile(fileData: { path: string; content: string; size: number; lastModified: Date }): void {
-    Object.values(this.projects).forEach((project) => {
-      const file = project.files.find((f) => f.fullPath === fileData.path);
-      if (file) {
-        file.content = fileData.content;
-        file.size = fileData.size;
-        file.lastModified = fileData.lastModified;
-        const io = getIO();
-        io.emit('fileUpdated', {
-          project: project.name,
-          path: file.path,
-          content: fileData.content,
-          size: fileData.size,
-          lastModified: fileData.lastModified,
-        });
-      }
+  // updateFile(fileData: { path: string; content: string; size: number; lastModified: Date }): void {
+  //   Object.values(this.projects).forEach((project) => {
+  //     const file = project.files.find((f) => f.fullPath === fileData.path);
+  //     if (file) {
+  //       file.content = fileData.content;
+  //       file.size = fileData.size;
+  //       file.lastModified = fileData.lastModified;
+  //       const io = getIO();
+  //       console.log('updated file:',file);
+  //       io.emit('fileUpdated', {
+  //         project: project.name,
+  //         path: file.path,
+  //         content: fileData.content,
+  //         size: fileData.size,
+  //         lastModified: fileData.lastModified,
+  //       });
+  //     }
+  //   });
+  // }
+
+updateFile(fileData: {
+  path: string;
+  content: string;
+  size: number;
+  lastModified: Date;
+}): void {
+  Object.values(this.projects).forEach((project) => {
+    const file = project.files.find(
+      (f) => f.fullPath === fileData.path
+    );
+
+    if (!file) return;
+
+    const changed = hasFileChanged(file, fileData);
+
+    if (changed) {
+    console.log(`🔄 File change detected for path: ${file.path}`);
+
+    // ✅ Apply update
+    file.content = fileData.content;
+    file.size = fileData.size;
+    file.lastModified = fileData.lastModified;
+
+    // 🔁 Update search index
+    this.updateFileIndex(project.name, project.files);
+
+      const relativePath = path.relative(
+        project.srcFolder,
+        file.path
+      );
+
+      updateFileChunks({
+        projectName: project.name,
+        srcFolder: project.srcFolder,
+        filePath: file.path,
+        relativePath,
+        content: file.content,
+      });
+
+    const io = getIO();
+    io.emit("fileUpdated", {
+      project: project.name,
+      path: file.path,
+      content: fileData.content,
+      size: fileData.size,
+      lastModified: fileData.lastModified,
     });
   }
+  });
+  
+}
+
 
   deleteFile(filePath: string): void {
     Object.values(this.projects).forEach((project) => {

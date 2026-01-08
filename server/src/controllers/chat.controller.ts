@@ -4,7 +4,6 @@ import path from "path";
 import fs from "fs-extra";
 import { getStoredProjectDirectory } from "../utils/get-directory";
 import llmService from "../services/llm.service";
-import { error } from "console";
 
 export const sendChat = async (req: Request, res: Response): Promise<void> => {
   try {

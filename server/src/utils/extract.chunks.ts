@@ -203,19 +203,19 @@ function saveChunks(projectName: string, newChunks: ChunkData[]): void {
   /**
    * ✅ SAME PROJECT → UPSERT
    */
-  for (const chunk of newChunks) {
-    const index = stored.chunks.findIndex(
-      (c) =>
-        c.symbol === chunk.symbol &&
-        c.filePath === chunk.filePath
-    );
+  // for (const chunk of newChunks) {
+  //   const index = stored.chunks.findIndex(
+  //     (c) =>
+  //       c.symbol === chunk.symbol &&
+  //       c.filePath === chunk.filePath
+  //   );
 
-    if (index !== -1) {
-      stored.chunks[index] = chunk;
-    } else {
-      stored.chunks.push(chunk);
-    }
-  }
+  //   if (index !== -1) {
+  //     stored.chunks[index] = chunk;
+  //   } else {
+  //     stored.chunks.push(chunk);
+  //   }
+  // }
 
   fs.writeFileSync(
     dataFile,
