@@ -6,6 +6,7 @@ import { getCurrentModelProvider } from "../utils/get-current-model";
 import { getModelsByProvider, saveModel } from "../utils/store-provider-models";
 import llmConfig from "../config/llm-config";
 import { extractChunksFromFiles } from "../utils/extract.chunks";
+import { embedProjectChunks } from "../utils/embedding";
 
 export const syncProject = (req: Request, res: Response): void => {
   try {
@@ -20,6 +21,8 @@ export const syncProject = (req: Request, res: Response): void => {
     }
     fileService.syncProject(projectName, files, srcFolder);
     extractChunksFromFiles(files, srcFolder,projectName);
+    console.log('embedding method call')
+    embedProjectChunks()
     res.json({
       success: true,
       message: `Project ${projectName} synced successfully`,

@@ -114,3 +114,27 @@ export interface LLMResponse {
   blocks: ChatBlock[];
   timestamp: Date;
 }
+
+
+export type ChunkData = {
+  symbol: string;
+  filePath: string;
+  type: "class-method" | "function" | "react-component";
+  lineRange: [number, number];
+  calls: string[];
+  content: string;
+};
+
+export type StoredData = {
+  projectName: string;
+  path:string;
+  chunks: ChunkData[];
+};
+
+export type UpdateFileChunkInput = {
+  projectName: string;
+  srcFolder: string;
+  filePath: string;
+  relativePath: string;
+  content: string;
+};

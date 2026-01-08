@@ -1,28 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { extractChunksFromFiles } from "./extract.chunks";
-
-type ChunkData = {
-  symbol: string;
-  filePath: string;
-  type: "class-method" | "function" | "react-component";
-  lineRange: [number, number];
-  calls: string[];
-  content: string;
-};
-
-type StoredData = {
-  projectName: string;
-  chunks: ChunkData[];
-};
-
-type UpdateFileChunkInput = {
-  projectName: string;
-  srcFolder: string;
-  filePath: string;
-  relativePath: string;
-  content: string;
-};
+import { ChunkData, StoredData, UpdateFileChunkInput } from "../types";
 
 function isSameChunkContent(a: ChunkData, b: ChunkData): boolean {
   return a.content === b.content;
@@ -44,6 +23,7 @@ export function updateFileChunks({
 
   let stored: StoredData = {
     projectName,
+    path:filePath,
     chunks: [],
   };
 
