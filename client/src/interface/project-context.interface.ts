@@ -10,6 +10,7 @@ import type { ChatResponseData } from "../types/chat";
 
 export interface ProjectContextType {
   projects: Project[];
+  project: Project | null;
   selectedProject: string;
   selectedFile: FileContent | null;
   searchQuery: string;

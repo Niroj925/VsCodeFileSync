@@ -7,7 +7,7 @@ import React, {
   useEffect,
 } from "react";
 import debounce from "lodash.debounce";
-import { useProjects } from "../hooks/useProjects";
+import { useProject } from "../hooks/useProjects";
 import { useFileSearch } from "../hooks/useFileSearch";
 import { useStats } from "../hooks/useStats";
 import type {
@@ -62,10 +62,12 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const {
     projects,
+    project,
     loading: projectsLoading,
     loadProjects: originalLoadProjects,
     loadProjectFiles: originalLoadProjectFiles,
-  } = useProjects();
+  } = useProject();
+
   const {
     searchResults,
     loading: searchLoading,
@@ -74,13 +76,13 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     setSearchResults,
   } = useFileSearch();
   const { stats, calculateStats } = useStats(projects);
-
   // Debounced functions
   const debouncedLoadProjects = useRef(
     debounce(async () => {
       await originalLoadProjects();
     }, 300)
   ).current;
+
 
   const debouncedLoadStats = useRef(
     debounce(() => calculateStats(), 300)
@@ -242,6 +244,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const value: ProjectContextType = {
     projects,
+    project,
     selectedProject,
     selectedFile,
     searchQuery,

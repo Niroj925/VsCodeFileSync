@@ -3,10 +3,11 @@ import { useProjectContext } from "../../contexts/ProjectContext";
 import TreeNode from "../files/TreeNode";
 
 const SidebarFileTree: React.FC = () => {
-  const { selectedProject, fileTree, searchQuery } = useProjectContext();
-  if (!selectedProject) return null;
+  const { project, fileTree, searchQuery } =
+    useProjectContext();
+  if (!project?.name) return null;
 
-  const root = fileTree[selectedProject];
+  const root = fileTree[project?.name];
   if (!root || !root.children) return null;
   let sh =
     searchQuery.length > 0 ? "calc(100vh - 330px)" : "calc(100vh - 140px)";

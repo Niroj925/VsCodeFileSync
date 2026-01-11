@@ -8,6 +8,11 @@ export const projectService = {
     return data.projects;
   },
 
+  getSyncedProject: async (): Promise<Project> => {
+    const data = await api.get<{ project: Project }>("/api/project");
+    return data.project;
+  },
+
   getProjectFiles: async (projectName: string): Promise<FileItem[]> => {
     const data = await api.get<{ files: FileItem[] }>(
       `/api/project/${projectName}/files`

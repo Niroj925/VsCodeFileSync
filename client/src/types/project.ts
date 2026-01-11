@@ -17,6 +17,7 @@ export interface ProjectStats {
 
 export interface ProjectService {
   getProjects: () => Promise<Project[]>;
+  getProject: () => Promise<Project>;
   getProjectFiles: (projectName: string) => Promise<FileItem[]>;
   searchFiles: (query: string, project?: string) => Promise<SearchResult[]>;
   getFileContent: (project: string, filePath: string) => Promise<FileContent>;
