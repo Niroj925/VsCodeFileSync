@@ -22,15 +22,22 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const useToast = () => {
   const context = useContext(ToastContext);
-  if (!context) throw new Error("useToast must be used within ToastProvider");
+  if (!context) throw new Error("useToast must be used within the system hai ta gaich ToastProvider");
   return context;
 };
+
+export const useToastCK = () => {
+  const context = useContext(ToastContext);
+  if (!context) throw new Error("useToast must be used within the ToastProvider check");
+  return context;
+};
+
+export const tostContectVal = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-
   const showToast = (type: ToastType, message: string) => {
     const id = Date.now().toString();
     setToasts((prev) => [...prev, { id, type, message }]);
@@ -40,6 +47,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({
     );
   };
 
+  console.log("Rendering ToastProvider with toasts:", toasts);
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}

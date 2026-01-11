@@ -7,8 +7,9 @@ import { getModelsByProvider, saveModel } from "../utils/store-provider-models";
 import llmConfig from "../config/llm-config";
 import { extractChunksFromFiles } from "../utils/extract.chunks";
 import { embedProjectChunks } from "../utils/embedding";
+import { checkProjectExist } from "../utils/check-project-embed";
 
-export const syncProject = (req: Request, res: Response): void => {
+export const syncProject = async (req: Request, res: Response) => {
   try {
     const { projectName, files, srcFolder } = req.body;
     // console.log("full project:", req.body);
@@ -20,14 +21,21 @@ export const syncProject = (req: Request, res: Response): void => {
       return;
     }
     fileService.syncProject(projectName, files, srcFolder);
-    extractChunksFromFiles(files, srcFolder,projectName);
-    console.log('embedding method call')
-    embedProjectChunks()
+    extractChunksFromFiles(files, srcFolder, projectName);
+
+    const project = await checkProjectExist(projectName, srcFolder);
+    console.log("project info:", project);
+    if (project.exist) {
+      console.log("this project already embeded");
+    } else {
+      console.log("embedding method call");
+      embedProjectChunks();
+    }
+
     res.json({
       success: true,
       message: `Project ${projectName} synced successfully`,
       fileCount: files.length,
-      // frontendUrl: "http://localhost:3000",
     });
   } catch (error) {
     console.error("Sync error:", error);

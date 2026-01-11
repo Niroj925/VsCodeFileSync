@@ -33,18 +33,21 @@ export async function embedProjectChunks() {
   }
 
   const info = await ensureCodeCollection(stored?.projectName);
-  if (!info.created) {
-    return;
-  }
+  console.log('info:',info)
+  // if (!info.created) {
+  //   return;
+  // }
 
   const chunks = stored?.chunks;
+  let chunkCount=0;
+  console.log('embedding running......')
   for (const chunk of chunks) {
     const text = buildEmbeddingText(chunk);
+    chunkCount+=1;
     const embedding = await openai.embeddings.create({
       model: "text-embedding-3-small",
       input: text,
     });
-
     points.push({
       id: uuid(),
       vector: embedding.data[0].embedding,
@@ -58,9 +61,11 @@ export async function embedProjectChunks() {
         content: chunk.content,
       },
     });
+    console.log(`chunk ${chunk.symbol} embedded.`);
   }
-  console.log("points:", points);
-  await qdrant.upsert("code_chunks", {
+  console.log('chunk count:',chunkCount)
+  console.log("points count:", points.length);
+  await qdrant.upsert(stored?.projectName, {
     wait: true,
     points,
   });

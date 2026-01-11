@@ -138,3 +138,20 @@ export type UpdateFileChunkInput = {
   relativePath: string;
   content: string;
 };
+
+  export interface CodeChunkResult {
+    score: number;
+    symbol: string;
+    filePath: string;
+    type: string;
+    lineRange: [number, number];
+    calls: string[];
+    content: string;
+  }
+
+  export interface KeywordExtraction {
+  primary: string[]; // Most important (e.g., "toast", "message")
+  secondary: string[]; // Supporting terms (e.g., "format", "display")
+  actions: string[]; // What to do (e.g., "change", "update")
+  codePatterns: string[]; // Likely symbol patterns (e.g., "Toast", "showToast", "formatMessage")
+}

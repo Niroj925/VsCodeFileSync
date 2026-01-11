@@ -1,16 +1,20 @@
-import { FileData, Project } from '../types';
-import { getIO } from '../socket';
+import { FileData, Project } from "../types";
+import { getIO } from "../socket";
 import path from "path";
 
-import { saveProjectDirectory } from '../utils/store-directory';
-import { hasFileChanged } from '../utils/check-file-change.utils';
-import { updateFileChunks } from '../utils/extract-update-file.chunks';
+import { saveProjectDirectory } from "../utils/store-directory";
+import { hasFileChanged } from "../utils/check-file-change.utils";
+import { updateFileChunks } from "../utils/extract-update-file.chunks";
 
 class FileService {
   private projects: Record<string, Project> = {};
   private fileIndex: Record<string, FileData[]> = {};
 
-  syncProject(projectName: string, files: FileData[], srcFolder: string): Project {
+  syncProject(
+    projectName: string,
+    files: FileData[],
+    srcFolder: string
+  ): Project {
     const project: Project = {
       name: projectName,
       srcFolder,
@@ -21,12 +25,11 @@ class FileService {
 
     this.projects[projectName] = project;
     this.updateFileIndex(projectName, files);
-    
-    
+
     saveProjectDirectory(srcFolder);
     const io = getIO();
-    io.emit('projectSynced', { projectName, fileCount: files.length });
-    
+    io.emit("projectSynced", { projectName, fileCount: files.length });
+
     return project;
   }
 
@@ -34,19 +37,29 @@ class FileService {
     return this.projects[projectName] || null;
   }
 
-  getProjectInfo(){
+  getProjectInfo() {
     return this.projects[0];
   }
 
-  getAllProjects(): Array<{ name: string; fileCount: number; lastSynced: Date }> {
-    return Object.keys(this.projects).map(name => ({
+  getAllProjects(): Array<{
+    name: string;
+    fileCount: number;
+    lastSynced: Date;
+  }> {
+    return Object.keys(this.projects).map((name) => ({
       name,
       fileCount: this.projects[name].files.length,
       lastSynced: this.projects[name].lastSynced,
     }));
   }
 
-  createFile(fileData: { path: string; relativePath: string; content: string; size: number; lastModified: Date }): void {
+  createFile(fileData: {
+    path: string;
+    relativePath: string;
+    content: string;
+    size: number;
+    lastModified: Date;
+  }): void {
     Object.values(this.projects).forEach((project) => {
       project.files.push({
         path: fileData.relativePath,
@@ -57,7 +70,7 @@ class FileService {
       });
 
       const io = getIO();
-      io.emit('fileCreated', {
+      io.emit("fileCreated", {
         project: project.name,
         path: fileData.relativePath,
         content: fileData.content,
@@ -70,92 +83,71 @@ class FileService {
   createFolder(relativePath: string): void {
     Object.values(this.projects).forEach((project) => {
       const io = getIO();
-      io.emit('folderCreated', {
+      io.emit("folderCreated", {
         project: project.name,
         path: relativePath,
       });
     });
   }
 
-  // updateFile(fileData: { path: string; content: string; size: number; lastModified: Date }): void {
-  //   Object.values(this.projects).forEach((project) => {
-  //     const file = project.files.find((f) => f.fullPath === fileData.path);
-  //     if (file) {
-  //       file.content = fileData.content;
-  //       file.size = fileData.size;
-  //       file.lastModified = fileData.lastModified;
-  //       const io = getIO();
-  //       console.log('updated file:',file);
-  //       io.emit('fileUpdated', {
-  //         project: project.name,
-  //         path: file.path,
-  //         content: fileData.content,
-  //         size: fileData.size,
-  //         lastModified: fileData.lastModified,
-  //       });
-  //     }
-  //   });
-  // }
+  updateFile(fileData: {
+    path: string;
+    content: string;
+    size: number;
+    lastModified: Date;
+  }): void {
+    if (
+      fileData.path.endsWith("data/chunks.json") ||
+      fileData.path.includes("/data/chunks.json")
+    ) {
+      return;
+    }
 
-updateFile(fileData: {
-  path: string;
-  content: string;
-  size: number;
-  lastModified: Date;
-}): void {
-  Object.values(this.projects).forEach((project) => {
-    const file = project.files.find(
-      (f) => f.fullPath === fileData.path
-    );
+    Object.values(this.projects).forEach((project) => {
+      const file = project.files.find((f) => f.fullPath === fileData.path);
 
-    if (!file) return;
+      if (!file) return;
 
-    const changed = hasFileChanged(file, fileData);
+      const changed = hasFileChanged(file, fileData);
+      if (changed) {
+        console.log(`🔄 File change detected for path: ${file.path}`);
 
-    if (changed) {
-    console.log(`🔄 File change detected for path: ${file.path}`);
+        // ✅ Apply update
+        file.content = fileData.content;
+        file.size = fileData.size;
+        file.lastModified = fileData.lastModified;
 
-    // ✅ Apply update
-    file.content = fileData.content;
-    file.size = fileData.size;
-    file.lastModified = fileData.lastModified;
+        // 🔁 Update search index
+        this.updateFileIndex(project.name, project.files);
 
-    // 🔁 Update search index
-    this.updateFileIndex(project.name, project.files);
+        const relativePath = path.relative(project.srcFolder, file.path);
 
-      const relativePath = path.relative(
-        project.srcFolder,
-        file.path
-      );
+        updateFileChunks({
+          projectName: project.name,
+          srcFolder: project.srcFolder,
+          filePath: file.path,
+          relativePath,
+          content: file.content,
+        });
 
-      updateFileChunks({
-        projectName: project.name,
-        srcFolder: project.srcFolder,
-        filePath: file.path,
-        relativePath,
-        content: file.content,
-      });
-
-    const io = getIO();
-    io.emit("fileUpdated", {
-      project: project.name,
-      path: file.path,
-      content: fileData.content,
-      size: fileData.size,
-      lastModified: fileData.lastModified,
+        const io = getIO();
+        io.emit("fileUpdated", {
+          project: project.name,
+          path: file.path,
+          content: fileData.content,
+          size: fileData.size,
+          lastModified: fileData.lastModified,
+        });
+      }
     });
   }
-  });
-  
-}
-
 
   deleteFile(filePath: string): void {
     Object.values(this.projects).forEach((project) => {
       project.files = project.files.filter((f) => f.fullPath !== filePath);
 
       const io = getIO();
-      io.emit('fileDeleted', {
+      io.emit("fileDeleted", {
         project: project.name,
         path: filePath,
       });
@@ -165,19 +157,23 @@ updateFile(fileData: {
   getFile(projectName: string, filePath: string): FileData | null {
     const project = this.getProject(projectName);
     if (!project) return null;
-    
-    return project.files.find(f => f.path === filePath) || null;
+
+    return project.files.find((f) => f.path === filePath) || null;
   }
 
   searchFiles(query: string, projectName?: string): Array<any> {
     const results: any[] = [];
 
-    Object.keys(this.fileIndex).forEach(project => {
+    Object.keys(this.fileIndex).forEach((project) => {
       if (projectName && project !== projectName) return;
 
-      this.fileIndex[project].forEach(file => {
-        const searchInContent = file.content.toLowerCase().includes(query.toLowerCase());
-        const searchInPath = file.path.toLowerCase().includes(query.toLowerCase());
+      this.fileIndex[project].forEach((file) => {
+        const searchInContent = file.content
+          .toLowerCase()
+          .includes(query.toLowerCase());
+        const searchInPath = file.path
+          .toLowerCase()
+          .includes(query.toLowerCase());
 
         if (searchInContent || searchInPath) {
           results.push({
@@ -197,7 +193,7 @@ updateFile(fileData: {
   }
 
   private updateFileIndex(projectName: string, files: FileData[]): void {
-    this.fileIndex[projectName] = files.map(file => ({
+    this.fileIndex[projectName] = files.map((file) => ({
       ...file,
       content: file.content.toLowerCase(),
     }));
