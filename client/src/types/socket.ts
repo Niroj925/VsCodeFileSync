@@ -6,15 +6,16 @@ export interface SocketEventData {
   lastModified?: string;
 }
 
-export type SocketEvent = 
-  | 'projectSynced'
-  | 'fileCreated'
-  | 'fileUpdated'
-  | 'fileDeleted'
-  | 'folderCreated'
-  | 'folderDeleted'
-  | 'connect'
-  | 'disconnect';
+export type SocketEvent =
+  | "projectSynced"
+  | "projectEmbeded"
+  | "fileCreated"
+  | "fileUpdated"
+  | "fileDeleted"
+  | "folderCreated"
+  | "folderDeleted"
+  | "connect"
+  | "disconnect";
 
 export interface SocketService {
   connect: () => void;

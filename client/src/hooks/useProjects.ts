@@ -4,6 +4,7 @@ import type { FileItem, Project } from '../types';
 
 interface UseProjectsReturn {
   project: Project | null;
+  unsavedProject: Project | null;
   projects: Project[];
   loading: boolean;
   error: string | null;
@@ -14,6 +15,7 @@ interface UseProjectsReturn {
 export const useProject = (): UseProjectsReturn => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [project, setProject] = useState<Project | null>(null);
+  const [unsavedProject, setUnsavedProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +24,9 @@ export const useProject = (): UseProjectsReturn => {
       setLoading(true);
       const data = await projectService.getProjects();
       const syncedData = await projectService.getSyncedProject();
+      const project = await projectService.getProject();
       setProject(syncedData);
+      setUnsavedProject(project);
       setProjects(data);
       setError(null);
       return data;
@@ -57,6 +61,7 @@ export const useProject = (): UseProjectsReturn => {
 
   return {
     project,
+    unsavedProject,
     projects,
     loading,
     error,

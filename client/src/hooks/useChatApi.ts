@@ -80,10 +80,70 @@ console.log('error message:', message);
     [showToast]
   );
 
+    const sendQuery = useCallback(
+    async (query: string) => {
+      if (isSendingRef.current) {
+        console.warn('⚠️ Already sending a message, skipping');
+        return null;
+      }
+
+      if (!query.trim()) {
+        const msg = 'No message or files to send';
+        setError(msg);
+        showToast('error', msg);
+        return null;
+      }
+
+      isSendingRef.current = true;
+      setIsLoading(true);
+      setError(null);
+
+      const payload = {
+        query: query.trim(),
+          timestamp: Date.now(),
+        requestId: `chat-${Date.now()}-${Math.random()
+          .toString(36)
+          .substr(2, 9)}`,
+      };
+
+      try {
+        const data = await chatService.sendQuery(payload);
+
+        if(data.success === false) {
+          const msg = data.error.message || 'Failed to get response from chat service';
+          setError(msg);
+          showToast('error', msg);
+          return
+        }
+
+        return {
+          ...data,
+          requestId: payload.requestId,
+        };
+      } catch (err: any) {
+        console.error('❌ [useChatApi] Send failed:', err);
+
+        const message =
+          err?.response?.data?.message ||
+          err?.message ||
+          'Failed to send message';
+console.log('error message:', message);
+        setError(message);
+        showToast('error', message);
+        throw err;
+      } finally {
+        isSendingRef.current = false;
+        setIsLoading(false);
+      }
+    },
+    [showToast]
+  );
+
   const clearError = () => setError(null);
 
   return {
     sendMessage,
+    sendQuery,
     isLoading,
     error,
     clearError,

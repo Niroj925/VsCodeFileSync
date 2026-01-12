@@ -2,36 +2,42 @@ import React, { useEffect, useState } from "react";
 import {
   Menu,
   Code,
-  Server,
   KeyRound,
   ChevronDown,
   Save,
   Layers,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { useProjectContext } from "../../contexts/ProjectContext";
 import { useModelApi } from "../../hooks/useModelApi";
 import { useProviderModel } from "../../hooks/useProviderModel";
+import socketService from "../../services/socketService";
+import { useProject } from "../../hooks/useProjects";
+
+type ProjectStatus = "idle" | "syncing" | "embedded";
+
 const Header: React.FC = () => {
   const {
     sidebarOpen,
     setSidebarOpen,
-    socketConnected,
     isOpenApiKeyModal,
     isOpenProviderModal,
     setIsOpenApiKeyModal,
     setIsOpenProviderModal,
   } = useProjectContext();
 
+  const { unsavedProject, loadProjects } = useProject();
   const { saveModel, currentModel, getCurrentModel } = useModelApi();
+  const { getModelsByProvider } = useProviderModel();
 
   const [models, setModels] = useState<string[]>([]);
-
-  const { getModelsByProvider } =
-    useProviderModel();
-
   const [open, setOpen] = useState(false);
   const [provider, setProvider] = useState("deepseek");
   const [model, setModel] = useState("deepseek-coder");
+
+  const [projectStatus, setProjectStatus] = useState<ProjectStatus>('idle');
+  const [projectName, setProjectName] = useState(unsavedProject?.name);
 
   const handleSave = () => {
     if (!model.trim()) return;
@@ -39,32 +45,102 @@ const Header: React.FC = () => {
     setOpen(false);
   };
 
+    useEffect(() => {
+       getCurrentModel();
+    loadProjects();
+    setProjectName(unsavedProject?.name)
+  }, [loadProjects]);
+
+  useEffect(()=>{
+    if(unsavedProject?.name){
+      setProjectStatus('embedded');
+      setProjectName(unsavedProject?.name);
+    }
+  },[unsavedProject,projectName])
+
   useEffect(() => {
-    getCurrentModel();
-  }, []);
-
-useEffect(() => {
-  const fetchModels = async () => {
-    try {
-      const existing = await getModelsByProvider(provider);
-
-      if (Array.isArray(existing) && existing.length > 0) {
-        setModels(existing);
-
-        setModel(existing[0]);
-      } else {
+    const fetchModels = async () => {
+      try {
+        const existing = await getModelsByProvider(provider);
+        if (Array.isArray(existing) && existing.length > 0) {
+          setModels(existing);
+          setModel(existing[0]);
+        } else {
+          setModels([]);
+          setModel("");
+        }
+      } catch (err) {
+        console.error("Failed to fetch provider models:", err);
         setModels([]);
         setModel("");
       }
-    } catch (err) {
-      console.error("Failed to fetch provider models:", err);
-      setModels([]);
-      setModel("");
-    }
-  };
+    };
 
-  fetchModels();
-}, [provider, getModelsByProvider]);
+    fetchModels();
+  }, [provider, getModelsByProvider]);
+
+  useEffect(() => {
+    socketService.connect();
+
+    const handleProjectSynced = () => {
+      console.log("Project syncing started");
+      setProjectStatus("syncing");
+    };
+
+    const handleProjectEmbeded = (data: any) => {
+      console.log("Embedded event received:", data);
+      if (data?.success) {
+        console.log("Setting status to embedded");
+        loadProjects();
+        setProjectStatus("embedded");
+        setProjectName(data?.projectName);
+      }
+    };
+
+    socketService.on("projectSynced" as any, handleProjectSynced);
+    socketService.on("projectEmbeded" as any, handleProjectEmbeded);
+
+    return () => {
+      socketService.off("projectSynced" as any, handleProjectSynced);
+      socketService.off("projectEmbeded" as any, handleProjectEmbeded);
+      socketService.disconnect();
+    };
+  }, []);
+
+  const renderProjectStatus = () => {
+    if (!projectName) return null;
+    if (projectStatus === "syncing") {
+      return (
+        <div
+          className="flex items-center space-x-1 px-3 py-1 rounded-full text-sm
+          bg-blue-100 text-blue-800
+          dark:bg-blue-900/30 dark:text-blue-300"
+        >
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span>
+            Syncing & embedding <strong>{projectName}</strong>…
+          </span>
+        </div>
+      );
+    }
+
+    if (projectStatus === "embedded") {
+      return (
+        <div
+          className="flex items-center space-x-1 px-3 py-1 rounded-full text-sm
+          bg-green-100 text-green-800
+          dark:bg-green-900/30 dark:text-green-300"
+        >
+          <CheckCircle2 className="h-3 w-3" />
+          <span>
+            <strong>{projectName}</strong> synced & embedded
+          </span>
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <header className="glass-card sticky top-0 z-50 border-b border-gray-200/50 dark:border-gray-700/50">
@@ -77,6 +153,7 @@ useEffect(() => {
             >
               <Menu className="h-5 w-5" />
             </button>
+
             <div className="flex items-center space-x-3">
               <div className="bg-gradient-to-r from-primary-500 to-purple-600 p-2 rounded-lg">
                 <Code className="h-6 w-6 text-white" />
@@ -94,98 +171,59 @@ useEffect(() => {
 
           <div className="flex items-center space-x-4">
             <div className="hidden md:flex items-center space-x-2 text-sm">
-              <div
-                className={`flex items-center space-x-1 px-3 py-1 rounded-full text-sm
-                    ${
-                      socketConnected
-                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                    }`}
-              >
-                <Server className="h-3 w-3" />
-                <span>
-                  Backend: {socketConnected ? "Connected" : "Disconnected"}
-                </span>
-              </div>
+              {renderProjectStatus()}
 
-              {/* <div className="flex items-center space-x-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full">
-                <Users className="h-3 w-3" />
-                <span>{stats.totalProjects} Projects</span>
-              </div> */}
               <div className="relative flex items-center justify-between bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-1 gap-4 shadow-sm">
-                {/* Left */}
                 <div className="flex flex-col">
                   <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                    {currentModel ? currentModel?.provider : "No Model"}
+                    {currentModel ? currentModel.provider : "No Model"}
                   </span>
                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {currentModel ? currentModel?.model : "N/A"}
+                    {currentModel ? currentModel.model : "N/A"}
                   </span>
                 </div>
 
-                {/* Button */}
                 <button
                   onClick={() => setOpen(!open)}
-                  className="p-1.5 rounded-full
-               text-gray-600 dark:text-gray-300
-               hover:bg-gray-200 dark:hover:bg-gray-700"
+                  className="p-1.5 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                 >
-                  <ChevronDown size={18} className="hover:text-primary-500" />
+                  <ChevronDown size={18} />
                 </button>
 
-                {/* Dropdown */}
                 {open && (
                   <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 z-50">
-                    {/* Provider */}
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <label className="block text-xs text-gray-500 mb-1">
                       Model Provider
                     </label>
                     <select
                       value={provider}
                       onChange={(e) => setProvider(e.target.value)}
-                      className="w-full text-sm px-2 py-1.5 rounded-md
-                       bg-gray-100 dark:bg-gray-800
-                       text-gray-800 dark:text-gray-200
-                       focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full text-sm px-2 py-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-white"
                     >
-                      <option value="openai" >OpenAI</option>
+                      <option value="openai">OpenAI</option>
                       <option value="deepseek">DeepSeek</option>
                       <option value="gemini">Gemini</option>
                     </select>
 
-                    {/* Model */}
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mt-2 mb-1">
+                    <label className="block text-xs text-gray-500 mt-2 mb-1">
                       Model Name
                     </label>
                     <select
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
-                      className="w-full text-sm px-2 py-1.5 rounded-md
-             bg-gray-100 dark:bg-gray-800
-             text-gray-800 dark:text-gray-200
-             focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full text-sm px-2 py-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-white"
                     >
-                      {models.length > 0 ? (
-                        models.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="" disabled>
-                          No models available
+                      {models.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
                         </option>
-                      )}
+                      ))}
                     </select>
 
-                    {/* Save */}
                     <div className="flex justify-end mt-3">
                       <button
                         onClick={handleSave}
-                        className="flex items-center gap-1
-                         text-xs font-medium px-2 py-1 rounded-md
-                         bg-primary-600 text-white
-                         hover:bg-primary-700 transition"
+                        className="flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-primary-600 text-white hover:bg-primary-700"
                       >
                         <Save size={12} />
                         Save
@@ -198,23 +236,16 @@ useEffect(() => {
 
             <button
               onClick={() => setIsOpenApiKeyModal(!isOpenApiKeyModal)}
-              // className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-              className="p-1.5 rounded-full
-               text-gray-600 dark:text-gray-300
-               hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="API Key Management"
+              className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-white"
             >
-              <KeyRound className="h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-primary-500" />
+              <KeyRound className="h-5 w-5" />
             </button>
 
             <button
               onClick={() => setIsOpenProviderModal(!isOpenProviderModal)}
-              className="p-1.5 rounded-full
-             text-gray-600 dark:text-gray-300
-             hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Provider Models Management"
+              className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-white"
             >
-              <Layers className="h-5 w-5 text-gray-600 dark:text-gray-400 hover:text-primary-500" />
+              <Layers className="h-5 w-5" />
             </button>
           </div>
         </div>

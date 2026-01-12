@@ -15,14 +15,12 @@ export const useWebSocket = (onEvent?: EventCallback): UseWebSocketReturn => {
   const socketRef = useRef<Socket | null>(null);
   const onEventRef = useRef<EventCallback | undefined>(onEvent);
 
-  // Keep onEventRef up to date without causing reconnections
   useEffect(() => {
     onEventRef.current = onEvent;
   }, [onEvent]);
 
-  // Connect once and register all event listeners
   useEffect(() => {
-    if (socketRef.current) return; // Already connected
+    if (socketRef.current) return; 
 
     console.log('Initializing WebSocket connection...');
     
@@ -36,7 +34,6 @@ export const useWebSocket = (onEvent?: EventCallback): UseWebSocketReturn => {
 
     socketRef.current = socket;
 
-    // Connection events
     socket.on('connect', () => {
       console.log('✅ Connected to backend via WebSocket');
       onEventRef.current?.('connect');
@@ -51,9 +48,9 @@ export const useWebSocket = (onEvent?: EventCallback): UseWebSocketReturn => {
       console.error('Connection error:', error);
     });
 
-    // Application events
     const events: SocketEvent[] = [
       'projectSynced',
+      'projectEmbeded',
       'fileCreated',
       'fileUpdated',
       'fileDeleted',

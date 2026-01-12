@@ -1,14 +1,13 @@
 import { useState, useRef, useCallback } from "react";
 import { useToast } from "../components/ui/Toast";
 import { projectService } from "../services/projectService";
-import { Award } from "lucide-react";
-
 export const useProviderModel = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isSavingRef = useRef(false);
 
   const { showToast } = useToast();
+
 
   // Save provider models
   const saveProviderModel = useCallback(

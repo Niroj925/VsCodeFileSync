@@ -4,16 +4,25 @@ import { useProjectContext } from "../../contexts/ProjectContext";
 import { useChatApi } from "../../hooks/useChatApi";
 
 const ChatInput: React.FC = () => {
-  const { selectedItems, removeItem, addChatResponse, clearSelectedItems, setSelectedFile } =
-    useProjectContext();
+  const {
+    selectedItems,
+    removeItem,
+    addChatResponse,
+    clearSelectedItems,
+    setSelectedFile,
+  } = useProjectContext();
   const [input, setInput] = useState("");
-  const { sendMessage, isLoading } = useChatApi();
+  const { sendMessage, sendQuery, isLoading } = useChatApi();
 
   const handleSubmit = async () => {
     if ((!input.trim() && selectedItems.length === 0) || isLoading) return;
 
     try {
-      const apiResponse = await sendMessage(input, selectedItems);
+      // const apiResponse = await sendMessage(input, selectedItems);
+      const apiResponse =
+        selectedItems.length > 0
+          ? await sendMessage(input, selectedItems)
+          : await sendQuery(input);
       if (apiResponse?.success) {
         addChatResponse({
           llmResponse: apiResponse,
@@ -33,15 +42,18 @@ const ChatInput: React.FC = () => {
           model: "error",
           timestamp: new Date(),
           blocks: [
-            { type: "text", content: "Error: Failed to get response from the assistant." }
-          ]
-        }
+            {
+              type: "text",
+              content: "Error: Failed to get response from the assistant.",
+            },
+          ],
+        },
       });
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
@@ -64,7 +76,7 @@ const ChatInput: React.FC = () => {
               <span className="truncate max-w-[160px] text-gray-700 dark:text-gray-300">
                 {item.path}
               </span>
-              <button 
+              <button
                 onClick={() => removeItem(item)}
                 className="text-gray-500 hover:text-red-500"
               >
@@ -84,13 +96,13 @@ const ChatInput: React.FC = () => {
           disabled={isLoading}
           className="flex-1 bg-transparent outline-none text-sm text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
         />
-        <button 
-          onClick={handleSubmit} 
+        <button
+          onClick={handleSubmit}
           disabled={isLoading || (!input.trim() && selectedItems.length === 0)}
           className={`p-2 rounded-full transition-colors ${
             isLoading || (!input.trim() && selectedItems.length === 0)
-              ? 'opacity-50 cursor-not-allowed'
-              : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:bg-gray-200 dark:hover:bg-gray-600"
           }`}
         >
           {isLoading ? (

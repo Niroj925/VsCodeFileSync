@@ -18,6 +18,8 @@ const AppContent: React.FC = () => {
     setSocketConnected,
   } = useProjectContext();
 
+
+
   useWebSocket((event: SocketEvent, data?: SocketEventData) => {
     switch (event) {
       case "connect":

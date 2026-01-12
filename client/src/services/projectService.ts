@@ -8,6 +8,11 @@ export const projectService = {
     return data.projects;
   },
 
+  getProject: async (): Promise<Project> => {
+    const data = await api.get<{ project: Project }>("/api/project/unsaved");
+    return data.project;
+  },
+
   getSyncedProject: async (): Promise<Project> => {
     const data = await api.get<{ project: Project }>("/api/project");
     return data.project;
