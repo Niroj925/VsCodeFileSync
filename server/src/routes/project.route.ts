@@ -8,6 +8,8 @@ import {
   getCurrentModel,
   saveProviderModels,
   getProviderModels,
+  getSyncedProject,
+  getProject,
 } from "../controllers/project.controller";
 
 const router = Router();
@@ -19,6 +21,8 @@ router.get("/get-provider-models", getProviderModels);
 router.post("/save-model", saveCurrentModel);
 router.get("/get-model", getCurrentModel);
 router.get("/all", getProjects);
+router.get("/unsaved", getProject);
+router.get("/", getSyncedProject);
 router.get("/:projectName/files", getProjectFiles);
 
 export default router;

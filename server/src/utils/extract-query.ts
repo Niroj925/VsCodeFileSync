@@ -20,7 +20,7 @@ Return ONLY valid JSON, no markdown.`;
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Faster and cheaper for this task
+      model: "gpt-4o-mini", 
       messages: [
         {
           role: "system",
@@ -40,12 +40,10 @@ Return ONLY valid JSON, no markdown.`;
     return JSON.parse(content);
   } catch (error) {
     console.error("Keyword extraction error:", error);
-    // Fallback to basic extraction
     return fallbackKeywordExtraction(query);
   }
 }
 
-// Fallback when LLM fails
 async function fallbackKeywordExtraction(
   query: string
 ): Promise<KeywordExtraction> {

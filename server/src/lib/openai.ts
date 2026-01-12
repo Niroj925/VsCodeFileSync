@@ -1,8 +1,9 @@
 import OpenAI from "openai";
 import * as dotenv from "dotenv";
+import { getOpenaiKey } from "../utils/get-openai-key";
 
 dotenv.config();
-
+const {key}=getOpenaiKey();
 export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: key??'',
 });

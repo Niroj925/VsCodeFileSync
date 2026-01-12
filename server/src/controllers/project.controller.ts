@@ -8,11 +8,12 @@ import llmConfig from "../config/llm-config";
 import { extractChunksFromFiles } from "../utils/extract.chunks";
 import { embedProjectChunks } from "../utils/embedding";
 import { checkProjectExist } from "../utils/check-project-embed";
+import { getSavedProject } from "../utils/get-project";
+import { getIO } from "../socket";
 
 export const syncProject = async (req: Request, res: Response) => {
   try {
     const { projectName, files, srcFolder } = req.body;
-    // console.log("full project:", req.body);
     if (!projectName || !files || !srcFolder) {
       res.status(400).json({
         success: false,
@@ -21,16 +22,23 @@ export const syncProject = async (req: Request, res: Response) => {
       return;
     }
     fileService.syncProject(projectName, files, srcFolder);
-    extractChunksFromFiles(files, srcFolder, projectName);
+    await extractChunksFromFiles(files, srcFolder, projectName);
 
     const project = await checkProjectExist(projectName, srcFolder);
-    console.log("project info:", project);
+
     if (project.exist) {
       console.log("this project already embeded");
     } else {
       console.log("embedding method call");
-      embedProjectChunks();
+      await embedProjectChunks();
     }
+
+    const io = getIO();
+    io.emit("projectEmbeded", {
+      success: true,
+      message: "Project synced and embedded.",
+      projectName
+    });
 
     res.json({
       success: true,
@@ -172,6 +180,42 @@ export const getProjects = (_req: Request, res: Response): void => {
     res.json({
       success: true,
       projects,
+    });
+  } catch (error) {
+    console.error("Get projects error:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const getSyncedProject = (_req: Request, res: Response): void => {
+  try {
+    const project = getSavedProject();
+
+    res.json({
+      success: true,
+      project,
+    });
+  } catch (error) {
+    console.error("Get projects error:", error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const getProject = (_req: Request, res: Response): void => {
+  try {
+    const projectInfo = getSavedProject();
+    if (!projectInfo?.name) return;
+    const project = fileService.getProject(projectInfo?.name);
+
+    res.json({
+      success: true,
+      project,
     });
   } catch (error) {
     console.error("Get projects error:", error);

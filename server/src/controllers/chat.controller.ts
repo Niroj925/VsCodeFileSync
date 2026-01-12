@@ -86,4 +86,25 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+export const sendQuery = async (req: Request, res: Response): Promise<void> => {
+  console.log(req.body)
+    const { query } = req.body;
+      try {
+
+        const llmResponse = await llmService.processQuery(query);
+        // console.log("LLM Response:", llmResponse);
+        res.json(llmResponse);
+        
+      } catch (llmError) {
+        console.error("LLM processing error:", llmError);
+        res.json({
+          success: false,
+          error:{
+            message: llmError instanceof Error ? llmError.message : "Unknown LLM error"
+          }
+        });
+      }
+  
+}
+
 

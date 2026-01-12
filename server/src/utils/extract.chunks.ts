@@ -16,11 +16,11 @@ type ChunkData = {
   content: string;
 };
 
-export function extractChunksFromFiles(
+export async function extractChunksFromFiles(
   files: IncomingFile[],
   srcFolder: string,
   projectName: string
-): ChunkData[] {
+): Promise<ChunkData[]> {
   const chunks: ChunkData[] = [];
 
   const project = new Project({
@@ -31,7 +31,6 @@ export function extractChunksFromFiles(
     },
   });
 console.log('files length:', files.length); 
-  /* ===================== ADD FILES ===================== */
   for (const file of files) {
     const fullPath = path.join(srcFolder, file.path);
     try {
@@ -43,11 +42,9 @@ console.log('files length:', files.length);
     }
   }
 
-  /* ===================== EXTRACT CHUNKS ===================== */
   for (const sf of project.getSourceFiles()) {
     const filePath = sf.getFilePath();
 
-    /* -------- 1. Classes & Methods (Backend) -------- */
     for (const cls of sf.getClasses()) {
       const className = cls.getName();
       if (!className) continue;
@@ -69,7 +66,6 @@ console.log('files length:', files.length);
       }
     }
 
-    /* -------- 2. Function Declarations -------- */
     for (const fn of sf.getFunctions()) {
       const fnName = fn.getName();
       if (!fnName) continue;
@@ -89,7 +85,6 @@ console.log('files length:', files.length);
       });
     }
 
-    /* -------- 3. Arrow / Const Functions (Frontend FIX) -------- */
     for (const v of sf.getVariableDeclarations()) {
       const name = v.getName();
       const initializer = v.getInitializer();
@@ -123,12 +118,10 @@ console.log('files length:', files.length);
     }
   }
 
-  /* ===================== SAVE ===================== */
   saveChunks(projectName, chunks);
   return chunks;
 }
 
-/* ===================== HELPERS ===================== */
 
 function extractCalls(node: Node): string[] {
   return node
@@ -181,9 +174,6 @@ function saveChunks(projectName: string, newChunks: ChunkData[]): void {
     }
   }
 
-  /**
-   * 🚨 DIFFERENT PROJECT → RESET EVERYTHING
-   */
   if (!stored || stored.projectName !== projectName) {
     fs.writeFileSync(
       dataFile,
@@ -199,23 +189,6 @@ function saveChunks(projectName: string, newChunks: ChunkData[]): void {
     );
     return;
   }
-
-  /**
-   * ✅ SAME PROJECT → UPSERT
-   */
-  // for (const chunk of newChunks) {
-  //   const index = stored.chunks.findIndex(
-  //     (c) =>
-  //       c.symbol === chunk.symbol &&
-  //       c.filePath === chunk.filePath
-  //   );
-
-  //   if (index !== -1) {
-  //     stored.chunks[index] = chunk;
-  //   } else {
-  //     stored.chunks.push(chunk);
-  //   }
-  // }
 
   fs.writeFileSync(
     dataFile,

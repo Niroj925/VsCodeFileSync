@@ -22,11 +22,10 @@ class FileService {
       lastSynced: new Date(),
     };
     console.log(`Syncing project: ${projectName} with ${files.length} files`);
-
+    saveProjectDirectory(project);
     this.projects[projectName] = project;
     this.updateFileIndex(projectName, files);
 
-    saveProjectDirectory(srcFolder);
     const io = getIO();
     io.emit("projectSynced", { projectName, fileCount: files.length });
 
@@ -51,6 +50,26 @@ class FileService {
       fileCount: this.projects[name].files.length,
       lastSynced: this.projects[name].lastSynced,
     }));
+  }
+
+  getSyncedProject(): {
+    name: string;
+    fileCount: number;
+    lastSynced: Date;
+  } | null {
+    const projectsArray = Object.values(this.projects);
+
+    if (projectsArray.length === 0) {
+      return null;
+    }
+
+    const project = projectsArray[0];
+
+    return {
+      name: project.name,
+      fileCount: project.files.length,
+      lastSynced: project.lastSynced,
+    };
   }
 
   createFile(fileData: {
@@ -112,12 +131,10 @@ class FileService {
       if (changed) {
         console.log(`🔄 File change detected for path: ${file.path}`);
 
-        // ✅ Apply update
         file.content = fileData.content;
         file.size = fileData.size;
         file.lastModified = fileData.lastModified;
 
-        // 🔁 Update search index
         this.updateFileIndex(project.name, project.files);
 
         const relativePath = path.relative(project.srcFolder, file.path);

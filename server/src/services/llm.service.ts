@@ -1,11 +1,12 @@
 // llm.service.ts - Updated with correct parsing
-import { ChatBlock, ChatRequest, LLMResponse } from "../types";
+import { ChatBlock, ChatRequest, ChunkData, LLMResponse } from "../types";
 import { OpenAIProvider } from "../providers/openai.provider";
 import { GeminiProvider } from "../providers/gemini.provider";
 import { DeepSeekProvider } from "../providers/deepseek.provider";
 import llmConfig from "../config/llm-config";
-import { formatPrompt } from "../utils/prompt.utils";
+import { formatedPrompt, formatPrompt } from "../utils/prompt.utils";
 import { getLanguageFromPath } from "../utils/helpers";
+import embeddingService from "./embedding.service";
 
 class LLMService {
   private providers = new Map<string, any>();
@@ -30,11 +31,17 @@ class LLMService {
             this.providers.set("gemini", new GeminiProvider(providerConfig));
             break;
           case "deepseek":
-            this.providers.set("deepseek", new DeepSeekProvider(providerConfig));
+            this.providers.set(
+              "deepseek",
+              new DeepSeekProvider(providerConfig)
+            );
             break;
         }
       } catch (error) {
-        console.error(`Failed to initialize provider ${providerConfig.name}:`, error);
+        console.error(
+          `Failed to initialize provider ${providerConfig.name}:`,
+          error
+        );
       }
     });
   }
@@ -45,17 +52,17 @@ class LLMService {
       const providerName = current.provider;
       const model = current.model;
       const provider = this.providers.get(providerName);
-      
+
       if (!provider) {
         throw new Error(`Provider "${providerName}" is not configured`);
       }
-      
+
       console.log(`Using LLM Provider: ${providerName} with model ${model}`);
 
       // Prepare context files for prompt ONLY (not for output)
-      const filesWithContent = request.files.map(file => ({
+      const filesWithContent = request.files.map((file) => ({
         path: file.path,
-        content: file.content || ''
+        content: file.content || "",
       }));
 
       const prompt = formatPrompt(request.query, filesWithContent);
@@ -74,7 +81,53 @@ class LLMService {
         request.query,
         providerName,
         model,
-        rawResponse  // Only LLM response here
+        rawResponse // Only LLM response here
+      );
+    } catch (error) {
+      console.error("LLM processing error:", error);
+      throw error;
+    }
+  }
+
+  async processQuery(query: string): Promise<LLMResponse> {
+    try {
+      console.log('query:',query)
+      const current = llmConfig.getCurrentProvider();
+      const providerName = current.provider;
+      const model = current.model;
+      const provider = this.providers.get(providerName);
+
+      if (!provider) {
+        throw new Error(`Provider "${providerName}" is not configured`);
+      }
+
+      console.log(`Using LLM Provider: ${providerName} with model ${model}`);
+
+      const relevantChunks = await embeddingService.searchRelevantChunks(query);
+      const filesWithContent = relevantChunks.map((chunk) => {
+        return {
+          symbol: chunk.symbol,
+          type: chunk.type,
+          score: chunk.score,
+          filePath: chunk.filePath,
+          content: chunk.content,
+        };
+      });
+      console.log('files content length:',filesWithContent.length)
+      const prompt = formatedPrompt(query, filesWithContent);
+
+      const rawResponse: string = await provider.sendMessage({
+        prompt,
+        model,
+      });
+
+      // console.log("raw response:", rawResponse);
+
+      return this.formatResponse(
+        query,
+        providerName,
+        model,
+        rawResponse 
       );
     } catch (error) {
       console.error("LLM processing error:", error);
@@ -86,11 +139,10 @@ class LLMService {
     query: string,
     provider: string,
     model: string,
-    llmResponse: string  // Only LLM's response
+    llmResponse: string 
   ): LLMResponse {
-    // Parse ONLY the LLM response
     const blocks = this.parseResponseToBlocks(query, llmResponse);
-    
+
     return {
       success: true,
       query,
@@ -103,17 +155,16 @@ class LLMService {
 
   private parseResponseToBlocks(
     query: string,
-    response: string  // Only LLM response
+    response: string 
   ): ChatBlock[] {
     const blocks: ChatBlock[] = [];
 
-    // Always include the query
     blocks.push({
       type: "query",
       content: query,
     });
 
-    if (!response || response.trim() === '') {
+    if (!response || response.trim() === "") {
       blocks.push({
         type: "text",
         content: "The LLM provider returned an empty response.",
@@ -130,11 +181,13 @@ class LLMService {
 
   private parseStructuredResponse(response: string): ChatBlock[] {
     const blocks: ChatBlock[] = [];
-    
+
     // Check if it's a "no changes" response
-    if (response.toLowerCase().includes('no file changes required') ||
-        response.toLowerCase().includes('no changes needed') ||
-        response.toLowerCase().includes('no file changes are needed')) {
+    if (
+      response.toLowerCase().includes("no file changes required") ||
+      response.toLowerCase().includes("no changes needed") ||
+      response.toLowerCase().includes("no file changes are needed")
+    ) {
       blocks.push({
         type: "text",
         content: response.trim(),
@@ -143,12 +196,30 @@ class LLMService {
     }
 
     // Extract structured sections from LLM response
-    const summaryMatch = this.extractSection(response, /## Summary\s*\n([\s\S]*?)(?=\n## |$)/i);
-    const analysisMatch = this.extractSection(response, /## Analysis\s*\n([\s\S]*?)(?=\n## |$)/i);
-    const summaryChangesMatch = this.extractSection(response, /## Summary of Changes\s*\n([\s\S]*?)(?=\n## |$)/i);
-    const changesMatch = this.extractSection(response, /## Changes\s*\n([\s\S]*?)(?=\n## |$)/i);
-    const directoryMatch = this.extractSection(response, /## Directory Structure\s*\n```[^`]*\n([\s\S]*?)```/i);
-    const fileChangesSection = this.extractSection(response, /## File Changes\s*\n([\s\S]*?)(?=\n## |$)/i);
+    const summaryMatch = this.extractSection(
+      response,
+      /## Summary\s*\n([\s\S]*?)(?=\n## |$)/i
+    );
+    const analysisMatch = this.extractSection(
+      response,
+      /## Analysis\s*\n([\s\S]*?)(?=\n## |$)/i
+    );
+    const summaryChangesMatch = this.extractSection(
+      response,
+      /## Summary of Changes\s*\n([\s\S]*?)(?=\n## |$)/i
+    );
+    const changesMatch = this.extractSection(
+      response,
+      /## Changes\s*\n([\s\S]*?)(?=\n## |$)/i
+    );
+    const directoryMatch = this.extractSection(
+      response,
+      /## Directory Structure\s*\n```[^`]*\n([\s\S]*?)```/i
+    );
+    const fileChangesSection = this.extractSection(
+      response,
+      /## File Changes\s*\n([\s\S]*?)(?=\n## |$)/i
+    );
 
     // Add directory structure if present
     if (directoryMatch) {
@@ -175,19 +246,25 @@ class LLMService {
     }
 
     // Add changes list if present (multiple possible formats)
-    let changesContent = '';
+    let changesContent = "";
     if (summaryChangesMatch) changesContent = summaryChangesMatch;
     else if (changesMatch) changesContent = changesMatch;
 
     if (changesContent) {
-      const listItems = changesContent.trim()
-        .split('\n')
-        .filter(line => line.trim().startsWith('-') || line.trim().startsWith('*') || line.trim().match(/^\d+\./));
-      
+      const listItems = changesContent
+        .trim()
+        .split("\n")
+        .filter(
+          (line) =>
+            line.trim().startsWith("-") ||
+            line.trim().startsWith("*") ||
+            line.trim().match(/^\d+\./)
+        );
+
       if (listItems.length > 0) {
         blocks.push({
           type: "list",
-          content: listItems.join('\n'),
+          content: listItems.join("\n"),
         });
       } else {
         // If not a list, add as text
@@ -200,30 +277,34 @@ class LLMService {
 
     // Parse file changes (code blocks) - Check multiple patterns
     let fileBlocks: ChatBlock[] = [];
-    
+
     if (fileChangesSection) {
       // Parse from structured File Changes section
-      fileBlocks = this.extractFileBlocksFromStructuredSection(fileChangesSection);
+      fileBlocks =
+        this.extractFileBlocksFromStructuredSection(fileChangesSection);
     } else {
       // Try to extract any code blocks from entire response
       fileBlocks = this.extractFileBlocksFromResponse(response);
     }
-    
+
     // Add warning if we found no file blocks but response indicates changes
-    if (fileBlocks.length === 0 && 
-        (response.toLowerCase().includes('modified file') || 
-         response.toLowerCase().includes('new file') ||
-         response.toLowerCase().includes('### file:'))) {
+    if (
+      fileBlocks.length === 0 &&
+      (response.toLowerCase().includes("modified file") ||
+        response.toLowerCase().includes("new file") ||
+        response.toLowerCase().includes("### file:"))
+    ) {
       blocks.push({
         type: "warning",
-        content: "Found references to file changes but couldn't parse them. Please check the response format.",
+        content:
+          "Found references to file changes but couldn't parse them. Please check the response format.",
       });
     } else {
       blocks.push(...fileBlocks);
     }
 
     // If no blocks were created (no structured format), add entire response as text
-    if (blocks.filter(b => b.type !== 'query').length === 0) {
+    if (blocks.filter((b) => b.type !== "query").length === 0) {
       blocks.push({
         type: "text",
         content: response.trim(),
@@ -240,24 +321,27 @@ class LLMService {
 
   private extractFileBlocksFromStructuredSection(section: string): ChatBlock[] {
     const blocks: ChatBlock[] = [];
-    
+
     // Pattern for: ### MODIFIED FILE: /path/to/file.ext
-    const modifiedFileRegex = /### MODIFIED FILE:\s*(.+?)\s*\n```(\w+)?\n([\s\S]*?)```/gi;
-    
+    const modifiedFileRegex =
+      /### MODIFIED FILE:\s*(.+?)\s*\n```(\w+)?\n([\s\S]*?)```/gi;
+
     // Pattern for: ### NEW FILE: /path/to/file.ext
     const newFileRegex = /### NEW FILE:\s*(.+?)\s*\n```(\w+)?\n([\s\S]*?)```/gi;
-    
+
     // Also support old format: ### File: /path/to/file.ext
-    const fileRegex = /### File:\s*(.+?)(?:\s*\[(NEW|MODIFIED)\])?\s*\n```(\w+)?\n([\s\S]*?)```/gi;
-    
+    const fileRegex =
+      /### File:\s*(.+?)(?:\s*\[(NEW|MODIFIED)\])?\s*\n```(\w+)?\n([\s\S]*?)```/gi;
+
     let match;
-    
+
     // Check for MODIFIED FILE format
     while ((match = modifiedFileRegex.exec(section)) !== null) {
       const filePath = match[1].trim();
-      const language = match[2]?.toLowerCase() || getLanguageFromPath(filePath) || 'text';
+      const language =
+        match[2]?.toLowerCase() || getLanguageFromPath(filePath) || "text";
       const content = match[3].trim();
-      
+
       blocks.push({
         type: "code",
         filePath,
@@ -265,13 +349,14 @@ class LLMService {
         content: `// MODIFIED\n${content}`,
       });
     }
-    
+
     // Check for NEW FILE format
     while ((match = newFileRegex.exec(section)) !== null) {
       const filePath = match[1].trim();
-      const language = match[2]?.toLowerCase() || getLanguageFromPath(filePath) || 'text';
+      const language =
+        match[2]?.toLowerCase() || getLanguageFromPath(filePath) || "text";
       const content = match[3].trim();
-      
+
       blocks.push({
         type: "code",
         filePath,
@@ -279,14 +364,15 @@ class LLMService {
         content: `// NEW FILE\n${content}`,
       });
     }
-    
+
     // Check for old format
     while ((match = fileRegex.exec(section)) !== null) {
       const filePath = match[1].trim();
-      const modificationType = match[2] || 'MODIFIED';
-      const language = match[3]?.toLowerCase() || getLanguageFromPath(filePath) || 'text';
+      const modificationType = match[2] || "MODIFIED";
+      const language =
+        match[3]?.toLowerCase() || getLanguageFromPath(filePath) || "text";
       const content = match[4].trim();
-      
+
       blocks.push({
         type: "code",
         filePath,
@@ -294,29 +380,32 @@ class LLMService {
         content: `// ${modificationType.toUpperCase()}\n${content}`,
       });
     }
-    
+
     return blocks;
   }
 
   private extractFileBlocksFromResponse(response: string): ChatBlock[] {
     const blocks: ChatBlock[] = [];
-    
+
     // Look for any code blocks in the response
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
-    
+
     let match;
     while ((match = codeBlockRegex.exec(response)) !== null) {
-      const language = match[1] || 'text';
+      const language = match[1] || "text";
       const content = match[2].trim();
-      
+
       // Try to extract file path from preceding text
       const precedingText = response.substring(0, match.index);
-      const fileMatch = precedingText.match(/(?:file|path):\s*([^\s\n`]+\.\w+)/i) ||
-                       precedingText.match(/(?:modified|new) file:\s*([^\s\n`]+\.\w+)/i) ||
-                       precedingText.match(/###\s*([^\s\n`]+\.\w+)/i);
-      
-      const filePath = fileMatch ? fileMatch[1] : this.guessFilePathFromContent(content, language);
-      
+      const fileMatch =
+        precedingText.match(/(?:file|path):\s*([^\s\n`]+\.\w+)/i) ||
+        precedingText.match(/(?:modified|new) file:\s*([^\s\n`]+\.\w+)/i) ||
+        precedingText.match(/###\s*([^\s\n`]+\.\w+)/i);
+
+      const filePath = fileMatch
+        ? fileMatch[1]
+        : this.guessFilePathFromContent(content, language);
+
       blocks.push({
         type: "code",
         filePath: filePath || "unknown",
@@ -324,46 +413,53 @@ class LLMService {
         content,
       });
     }
-    
+
     return blocks;
   }
 
-  private guessFilePathFromContent(content: string, language: string): string | null {
+  private guessFilePathFromContent(
+    content: string,
+    language: string
+  ): string | null {
     // Look for common patterns in first 10 lines
-    const lines = content.split('\n').slice(0, 10);
-    
+    const lines = content.split("\n").slice(0, 10);
+
     // Check for file path hints in comments or strings
     for (const line of lines) {
       // Look for import/export statements that might indicate file structure
-      const importMatch = line.match(/(?:import|export|require|from)\s+['"]([^'"]+)['"]/);
-      if (importMatch && importMatch[1].includes('/')) {
+      const importMatch = line.match(
+        /(?:import|export|require|from)\s+['"]([^'"]+)['"]/
+      );
+      if (importMatch && importMatch[1].includes("/")) {
         return importMatch[1];
       }
-      
+
       // Look for class/interface names that match file patterns
-      const classMatch = line.match(/(?:class|interface|export\s+class|export\s+interface)\s+(\w+)/);
+      const classMatch = line.match(
+        /(?:class|interface|export\s+class|export\s+interface)\s+(\w+)/
+      );
       if (classMatch) {
         const className = classMatch[1];
         const extensions: Record<string, string> = {
-          'javascript': '.js',
-          'typescript': '.ts',
-          'python': '.py',
-          'java': '.java',
-          'go': '.go',
-          'rust': '.rs',
-          'cpp': '.cpp',
-          'c': '.c',
-          'csharp': '.cs',
-          'php': '.php',
-          'ruby': '.rb',
-          'swift': '.swift',
-          'kotlin': '.kt',
+          javascript: ".js",
+          typescript: ".ts",
+          python: ".py",
+          java: ".java",
+          go: ".go",
+          rust: ".rs",
+          cpp: ".cpp",
+          c: ".c",
+          csharp: ".cs",
+          php: ".php",
+          ruby: ".rb",
+          swift: ".swift",
+          kotlin: ".kt",
         };
-        const ext = extensions[language.toLowerCase()] || '.txt';
+        const ext = extensions[language.toLowerCase()] || ".txt";
         return `${className}${ext}`;
       }
     }
-    
+
     return null;
   }
 

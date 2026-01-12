@@ -1,4 +1,4 @@
-// utils/hasFileChanged.ts
+
 import { FileData } from "../types";
 
 type IncomingFileUpdate = {

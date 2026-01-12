@@ -1,15 +1,15 @@
 import { embedQuery } from "../utils/embed-query";
-import { CodeChunkResult, KeywordExtraction } from "../types";
+import { ChunkData, KeywordExtraction, SearchRelevantChunkResult } from "../types";
 import { qdrant } from "../lib/qdrant";
 import { v4 as uuid } from "uuid";
 import { buildEmbeddingText } from "../utils/buildEmbeddingText";
 import fs from "fs";
 import path from "path";
-import { StoredData } from "../types";
 import { openai } from "../lib/openai";
 import { ensureCodeCollection } from "../utils/createCollection";
 import { error } from "console";
 import { extractKeywordsWithLLM } from "../utils/extract-query";
+import { getSavedProject } from "../utils/get-project";
 
 class EmbeddingService {
   async embedProjectChunks() {
@@ -122,7 +122,7 @@ class EmbeddingService {
           : undefined;
 
       // Search with filters
-      const searchResult = await qdrant.search("code_chunks", {
+      const searchResult = await qdrant.search(filters?.projectName as string, {
         vector: queryEmbedding.data[0].embedding,
         limit,
         with_payload: true,
@@ -148,6 +148,9 @@ class EmbeddingService {
 
   async hybridSearchChunks(query: string, keyword?: string, limit = 10) {
     try {
+       const project=getSavedProject()
+      if(!project?.name) return null;
+
       const queryEmbedding = await openai.embeddings.create({
         model: "text-embedding-3-small",
         input: query,
@@ -168,7 +171,7 @@ class EmbeddingService {
           }
         : undefined;
 
-      const searchResult = await qdrant.search("code_chunks", {
+      const searchResult = await qdrant.search(project.name, {
         vector: queryEmbedding.data[0].embedding,
         limit,
         with_payload: true,
@@ -194,7 +197,9 @@ class EmbeddingService {
 
   async getServerChunks(limit = 10, offset?: string) {
     try {
-      const res = await qdrant.scroll("server", {
+      const project = getSavedProject();
+      if (!project?.name) return null;
+      const res = await qdrant.scroll(project?.name, {
         limit,
         offset,
         with_payload: true,
@@ -222,7 +227,9 @@ class EmbeddingService {
 
   async countPoints() {
     try {
-      const count = await qdrant.count("server");
+      const project = getSavedProject();
+      if (!project?.name) return null;
+      const count = await qdrant.count(project?.name);
       console.log("Points in code_chunks:", count.count);
       return count;
     } catch (error) {
@@ -261,27 +268,30 @@ class EmbeddingService {
     }
   }
 
-  async searchRelevantChunks(query: string, limit = 5) {
-    if (!query) return [];
+async searchRelevantChunks(query: string):Promise<SearchRelevantChunkResult[]> {
+  if (!query) return [];
+  const project = getSavedProject();
+  if (!project) return [];
 
-    const keywords = await extractKeywordsWithLLM(query);
+  const keywords = await extractKeywordsWithLLM(query);
 
-    const enhancedQuery = this.buildEnhancedQuery(query, keywords);
-    const vector = await embedQuery(enhancedQuery);
+  const enhancedQuery = this.buildEnhancedQuery(query, keywords);
+  const vector = await embedQuery(enhancedQuery);
 
-    const results = await qdrant.search("code_chunks", {
-      vector,
-      limit: limit * 3,
-      with_payload: true,
-      with_vector: false,
-    });
+  const results = await qdrant.search(project?.name, {
+    vector,
+    limit: 50,
+    with_payload: true,
+    with_vector: false,
+  });
 
-    const reranked = this.rerankBySymbolMatch(results, keywords, query);
+  const reranked = this.rerankBySymbolMatch(results, keywords, query);
 
-    const normalized = this.normalizeScores(reranked);
+  const normalized = await this.normalizeScores(reranked);
 
-    return normalized;
-  }
+  return normalized.filter((r) => r.score >= 0.5);
+}
+
 
   private buildEnhancedQuery(
     originalQuery: string,
@@ -409,9 +419,6 @@ class EmbeddingService {
     return scored.sort((a, b) => b.score - a.score);
   }
 
-  /**
-   * Split symbol name by camelCase, PascalCase, snake_case, kebab-case
-   */
   private splitSymbolName(symbol: string): string[] {
     return symbol
       .replace(/([a-z])([A-Z])/g, "$1 $2") // camelCase

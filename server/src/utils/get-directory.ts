@@ -14,7 +14,7 @@ export function getStoredProjectDirectory(): string | null {
     const fileContent = fs.readFileSync(dataFile, 'utf8');
     const jsonData = JSON.parse(fileContent || '{}');
 
-    return jsonData.projectDirectory || null;
+    return jsonData.project.projectDirectory || null;
   } catch (error) {
     console.error('Failed to read projectDirectory from data.json');
     return null;

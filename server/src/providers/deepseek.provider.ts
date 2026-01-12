@@ -80,7 +80,7 @@ async sendMessage(request: LLMRequest): Promise<string> {
           content: truncatedPrompt,
         },
       ],
-      max_tokens: request.maxTokens || 3000, // Increased for diagrams
+      max_tokens: request.maxTokens || 3000, 
       temperature: request.temperature || 0.7,
       stream: false,
     });

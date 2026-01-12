@@ -16,11 +16,10 @@ export function extractChunks() {
       (sf) =>
         !sf.isDeclarationFile() && !sf.getFilePath().includes("node_modules")
     );
-// console.log("Filtered source files for chunk extraction:", sourceFiles)
+
   for (const sf of sourceFiles) {
     const filePath = sf.getFilePath();
 
-    /* ===================== CLASSES ===================== */
     for (const cls of sf.getClasses()) {
       const className = cls.getName();
       if (!className) continue;
@@ -62,7 +61,6 @@ ${method.getText()}
       }
     }
 
-    /* ===================== FUNCTIONS ===================== */
     for (const fn of sf.getFunctions()) {
       const fnName = fn.getName();
       if (!fnName) continue;
@@ -104,20 +102,16 @@ function resolveFullSymbolName(symbol: any): string | null {
   const sourceFile = decl.getSourceFile();
   const filePath = sourceFile.getFilePath();
 
-  // Ignore node_modules
   if (filePath.includes("node_modules")) return null;
 
-  // Function name
   const name = symbol.getName();
 
-  // Class method
   const parent = decl.getFirstAncestorByKind(SyntaxKind.ClassDeclaration);
   if (parent) {
     const className = parent.getName();
     if (className) return `${className}.${name}`;
   }
 
-  // Plain function
   return name;
 }
 

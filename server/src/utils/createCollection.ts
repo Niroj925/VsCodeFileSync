@@ -10,7 +10,6 @@ export type EnsureCollectionResult = {
 
 export async function ensureCodeCollection(name:string):Promise<EnsureCollectionResult> {
   const collections = await qdrant.getCollections();
-console.log('collection:',collections);
   const exists = collections.collections.some(
     (c) => c.name === name
   );

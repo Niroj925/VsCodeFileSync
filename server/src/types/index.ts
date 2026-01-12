@@ -155,3 +155,17 @@ export type UpdateFileChunkInput = {
   actions: string[]; // What to do (e.g., "change", "update")
   codePatterns: string[]; // Likely symbol patterns (e.g., "Toast", "showToast", "formatMessage")
 }
+
+export interface SearchRelevantChunkResult {
+  id: string;                // Unique identifier of the result
+  score: number;             // Relevance score
+  matchReason: string[];     // Reasons why this result matched
+  projectName: string;       // Name of the project where symbol is found
+  symbol: string;            // Symbol name
+  type: string;              // Type of symbol (function, react-component, etc.)
+  filePath: string;          // Absolute file path
+  lineRange: [number, number]; // Start and end line numbers
+  calls: string[];           // List of function calls inside this symbol
+  content: string;           // Full content of the symbol/code
+}
+
