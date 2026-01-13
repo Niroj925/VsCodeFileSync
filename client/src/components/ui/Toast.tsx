@@ -26,12 +26,6 @@ export const useToast = () => {
   return context;
 };
 
-export const useToastCK = () => {
-  const context = useContext(ToastContext);
-  if (!context) throw new Error("useToast must be used within the ToastProvider check");
-  return context;
-};
-
 export const tostContectVal = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({

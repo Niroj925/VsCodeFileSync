@@ -10,8 +10,6 @@ const ProjectList: React.FC = () => {
     handleProjectSelect,
   } = useProjectContext();
 
-  console.log('selected project:',selectedProject)
-
   return (
     <div className="glass-card rounded-2xl p-6 mb-6">
       <div className="flex items-center justify-between mb-6">

@@ -1,0 +1,4 @@
+.gitignore
+READMI.md
+node_modules/
+dist/

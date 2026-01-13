@@ -246,7 +246,7 @@ export const getProjectFiles = (req: Request, res: Response): void => {
       return;
     }
 
-    const project = fileService.getProject(projectName);
+    const project = fileService.getProject(projectName as string);
 
     if (!project) {
       res.status(404).json({

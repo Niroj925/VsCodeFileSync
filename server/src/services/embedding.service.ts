@@ -1,13 +1,12 @@
 import { embedQuery } from "../utils/embed-query";
 import { ChunkData, KeywordExtraction, SearchRelevantChunkResult } from "../types";
 import { qdrant } from "../lib/qdrant";
-import { v4 as uuid } from "uuid";
+import { v4 as uuid } from 'uuid';
 import { buildEmbeddingText } from "../utils/buildEmbeddingText";
 import fs from "fs";
 import path from "path";
 import { openai } from "../lib/openai";
 import { ensureCodeCollection } from "../utils/createCollection";
-import { error } from "console";
 import { extractKeywordsWithLLM } from "../utils/extract-query";
 import { getSavedProject } from "../utils/get-project";
 
