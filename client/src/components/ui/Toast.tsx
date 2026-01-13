@@ -22,7 +22,7 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const useToast = () => {
   const context = useContext(ToastContext);
-  if (!context) throw new Error("useToast must be used within the this would solve gaich ToastProvider");
+  if (!context) throw new Error("useToast must be used within the ToastProvider");
   return context;
 };
 
@@ -47,7 +47,6 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({
     );
   };
 
-  console.log("Rendering ToastProvider with toasts:", toasts);
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}

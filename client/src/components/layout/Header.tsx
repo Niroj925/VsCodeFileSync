@@ -19,8 +19,8 @@ type ProjectStatus = "idle" | "syncing" | "embedded";
 
 const Header: React.FC = () => {
   const {
-    sidebarOpen,
-    setSidebarOpen,
+    // sidebarOpen,
+    // setSidebarOpen,
     isOpenApiKeyModal,
     isOpenProviderModal,
     setIsOpenApiKeyModal,
@@ -148,8 +148,8 @@ const Header: React.FC = () => {
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center">
             <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden mr-2"
+              // onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden mr-2 text-white"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -160,10 +160,10 @@ const Header: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  VS Code File Sync
+                 VS Code Semantic Project Sync
                 </h1>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Real-time project file management
+                  Real-time code embedding & AI retrieval
                 </p>
               </div>
             </div>
