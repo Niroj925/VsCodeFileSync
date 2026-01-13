@@ -4,11 +4,12 @@ import path from "path";
 import fs from "fs-extra";
 import { getStoredProjectDirectory } from "../utils/get-directory";
 import llmService from "../services/llm.service";
+import { getOpenaiKey } from "../utils/get-openai-key";
 
 export const sendChat = async (req: Request, res: Response): Promise<void> => {
   try {
     const { message = "", files = [], useLLM = true, options } = req.body;
-    
+
     const projectDirectory = getStoredProjectDirectory();
     if (!projectDirectory) {
       res.status(400).json({
@@ -18,7 +19,11 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const flatFiles: Array<{ path: string; content: string; type?: 'file' | 'folder' | 'project' }> = [];
+    const flatFiles: Array<{
+      path: string;
+      content: string;
+      type?: "file" | "folder" | "project";
+    }> = [];
 
     for (const item of files) {
       const fullPath = path.join(projectDirectory, item.path);
@@ -38,7 +43,7 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
           const content = await fs.readFile(fullPath, "utf8");
           flatFiles.push({
             path: item.path,
-            content
+            content,
           });
         }
       } catch (err) {
@@ -55,20 +60,19 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
         const chatRequest = {
           query: message,
           files: flatFiles,
-          options: options || {}
+          options: options || {},
         };
 
         const llmResponse = await llmService.processChat(chatRequest);
         // console.log("LLM Response:", llmResponse);
         res.json(llmResponse);
-        
-      } catch (llmError) {
-        console.error("LLM processing error:", llmError);
+      } catch (err) {
+        console.error("LLM processing error:", err);
         res.json({
           success: false,
-          error:{
-            message: llmError instanceof Error ? llmError.message : "Unknown LLM error"
-          }
+          error: {
+            message: err instanceof Error ? err.message : "Unknown LLM error",
+          },
         });
       }
     } else {
@@ -87,24 +91,22 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const sendQuery = async (req: Request, res: Response): Promise<void> => {
-  console.log(req.body)
-    const { query } = req.body;
-      try {
-
-        const llmResponse = await llmService.processQuery(query);
-        // console.log("LLM Response:", llmResponse);
-        res.json(llmResponse);
-        
-      } catch (llmError) {
-        console.error("LLM processing error:", llmError);
-        res.json({
-          success: false,
-          error:{
-            message: llmError instanceof Error ? llmError.message : "Unknown LLM error"
-          }
-        });
-      }
-  
-}
-
-
+  const { query } = req.body;
+  try {
+    const { key } = getOpenaiKey();
+    if (!key) {
+      throw new Error("OpenAI API key missing for embeddings.");
+    }
+    const llmResponse = await llmService.processQuery(query);
+    // console.log("LLM Response:", llmResponse);
+    res.json(llmResponse);
+  } catch (err) {
+    console.error("LLM processing error:", err);
+    res.json({
+      success: false,
+      error: {
+        message: err instanceof Error ? err.message : "Unknown LLM error",
+      },
+    });
+  }
+};

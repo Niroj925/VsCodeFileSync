@@ -10,6 +10,8 @@ import { embedProjectChunks } from "../utils/embedding";
 import { checkProjectExist } from "../utils/check-project-embed";
 import { getSavedProject } from "../utils/get-project";
 import { getIO } from "../socket";
+import { addUpdateChunk } from "../utils/add-update-chunk";
+import { EmbedUpdateChunk } from "../utils/embed-update-chunk";
 
 export const syncProject = async (req: Request, res: Response) => {
   try {
@@ -21,13 +23,19 @@ export const syncProject = async (req: Request, res: Response) => {
       });
       return;
     }
+    const existingProject=getSavedProject();
+    console.log('existing project:',existingProject)
     fileService.syncProject(projectName, files, srcFolder);
-    await extractChunksFromFiles(files, srcFolder, projectName);
-
+    const extractedChunk = await extractChunksFromFiles(
+      files,
+      srcFolder,
+      projectName
+    );
     const project = await checkProjectExist(projectName, srcFolder);
 
     if (project.exist) {
       console.log("this project already embeded");
+     existingProject?.name==projectName? await addUpdateChunk(extractedChunk):await EmbedUpdateChunk(extractedChunk);
     } else {
       console.log("embedding method call");
       await embedProjectChunks();
@@ -37,7 +45,7 @@ export const syncProject = async (req: Request, res: Response) => {
     io.emit("projectEmbeded", {
       success: true,
       message: "Project synced and embedded.",
-      projectName
+      projectName,
     });
 
     res.json({
