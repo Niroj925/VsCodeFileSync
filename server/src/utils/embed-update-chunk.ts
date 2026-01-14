@@ -71,20 +71,20 @@ export async function EmbedUpdateChunk(chunks: ChunkData[]) {
         deletedIds.push(embedded.id);
       }
     }
- 
+
     deletedIds.length > 0 && (await deleteEmbedChunk(deletedIds));
 
     for (const chunk of updated) {
       const ids = await getChunkIdsBySymbolName(chunk);
       await deleteEmbedChunk(ids);
       await embedChunkInsert(chunk);
+      console.log(`chunk ${chunk.symbol} embeded`);
     }
 
     for (const chunk of created) {
       await embedChunkInsert(chunk);
+      console.log(`chunk ${chunk.symbol} embeded`);
     }
-
-    console.log("🚀 Embed mutatue chunk complete");
 
     return {
       updated: updated.length,

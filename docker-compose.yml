@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   server:
@@ -10,6 +10,8 @@ services:
       - ./server/src:/app/src
       - /app/node_modules
     command: npm run dev
+    environment:
+      - QDRANT_URL=http://qdrant:6333
     depends_on:
       - qdrant
 

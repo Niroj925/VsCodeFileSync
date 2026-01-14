@@ -66,14 +66,13 @@ export async function addUpdateChunk(chunks: ChunkData[]) {
       if (embeddedChunkIds.length > 0) {
         await deleteEmbedChunk(embeddedChunkIds);
       }
+      console.log(`chunk ${chunk.symbol} embeded`);
       await embedChunkInsert(chunk);
     }
 
     storedData.chunks = existingChunks;
 
     fs.writeFileSync(dataFile, JSON.stringify(storedData, null, 2), "utf8");
-
-    console.log("embed mutate chunk successfully");
 
     return {
       created: createdCount,

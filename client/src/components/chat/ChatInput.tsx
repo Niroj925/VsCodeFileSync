@@ -18,7 +18,6 @@ const ChatInput: React.FC = () => {
     if ((!input.trim() && selectedItems.length === 0) || isLoading) return;
 
     try {
-      // const apiResponse = await sendMessage(input, selectedItems);
       const apiResponse =
         selectedItems.length > 0
           ? await sendMessage(input, selectedItems)
@@ -28,7 +27,6 @@ const ChatInput: React.FC = () => {
           llmResponse: apiResponse,
         });
       }
-
       clearSelectedItems();
       setSelectedFile(null);
       setInput("");

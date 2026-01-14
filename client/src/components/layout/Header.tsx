@@ -19,15 +19,13 @@ type ProjectStatus = "idle" | "syncing" | "embedded";
 
 const Header: React.FC = () => {
   const {
-    // sidebarOpen,
-    // setSidebarOpen,
     isOpenApiKeyModal,
     isOpenProviderModal,
     setIsOpenApiKeyModal,
     setIsOpenProviderModal,
   } = useProjectContext();
 
-  const { unsavedProject, loadProjects } = useProject();
+  const { unsavedProject, loadProjects,loadProjectFiles } = useProject();
   const { saveModel, currentModel, getCurrentModel } = useModelApi();
   const { getModelsByProvider } = useProviderModel();
 
@@ -36,7 +34,7 @@ const Header: React.FC = () => {
   const [provider, setProvider] = useState("deepseek");
   const [model, setModel] = useState("deepseek-coder");
 
-  const [projectStatus, setProjectStatus] = useState<ProjectStatus>('idle');
+  const [projectStatus, setProjectStatus] = useState<ProjectStatus>("idle");
   const [projectName, setProjectName] = useState(unsavedProject?.name);
 
   const handleSave = () => {
@@ -44,19 +42,18 @@ const Header: React.FC = () => {
     saveModel(provider, model);
     setOpen(false);
   };
-
-    useEffect(() => {
-       getCurrentModel();
+  useEffect(() => {
+    getCurrentModel();
     loadProjects();
-    setProjectName(unsavedProject?.name)
+    setProjectName(unsavedProject?.name);
   }, [loadProjects]);
 
-  useEffect(()=>{
-    if(unsavedProject?.name){
-      setProjectStatus('embedded');
+  useEffect(() => {
+    if (unsavedProject?.name) {
+      setProjectStatus("embedded");
       setProjectName(unsavedProject?.name);
     }
-  },[unsavedProject,projectName])
+  }, [unsavedProject, projectName]);
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -92,6 +89,7 @@ const Header: React.FC = () => {
       if (data?.success) {
         console.log("Setting status to embedded");
         loadProjects();
+        loadProjectFiles(data?.projectName);
         setProjectStatus("embedded");
         setProjectName(data?.projectName);
       }
@@ -160,7 +158,7 @@ const Header: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                 VS Code Semantic Project Sync
+                  VS Code Semantic Project Sync
                 </h1>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Real-time code embedding & AI retrieval

@@ -34,7 +34,6 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
   const [selectedProject, setSelectedProject] = useState("");
   const [selectedFile, setSelectedFile] = useState<FileContent | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isOpenApiKeyModal, setIsOpenApiKeyModal] = useState(false);
@@ -76,19 +75,17 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     setSearchResults,
   } = useFileSearch();
   const { stats, calculateStats } = useStats(projects);
-  // Debounced functions
+ 
   const debouncedLoadProjects = useRef(
     debounce(async () => {
       await originalLoadProjects();
     }, 300)
   ).current;
 
-
   const debouncedLoadStats = useRef(
     debounce(() => calculateStats(), 300)
   ).current;
 
-  // Build file tree
   const buildFileTree = useCallback(
     (files: SearchResult[], projectName: string): FileTreeNode => {
       const root: FileTreeNode = {
@@ -126,20 +123,18 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
 
       try {
         const files = await originalLoadProjectFiles(projectName);
-        // now add type
         const formattedFiles: SearchResult[] = files.map((f) => ({
           project: projectName,
           path: f.path,
           size: f.size,
           lastModified: f.lastModified,
-          type: f.path.endsWith("/") ? "folder" : "file", // basic detection
+          type: f.path.endsWith("/") ? "folder" : "file", 
         }));
         setSearchResults(formattedFiles);
 
         const tree = buildFileTree(formattedFiles, projectName);
         setFileTree((prev) => ({ ...prev, [projectName]: tree }));
 
-        // Auto-expand first level
         setExpandedFolders(
           new Set(
             Object.keys(tree.children || {}).map(
@@ -231,16 +226,9 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   }, []);
 
-  // Auto-select first project when projects load
   useEffect(() => {
-    if (projects.length > 0 && !selectedProject) {
-      handleProjectSelect(projects[0].name);
-    }
-  }, [projects, selectedProject, handleProjectSelect]);
-
-  useEffect(() => {
-    calculateStats();
-  }, [projects, calculateStats]);
+    project?.name && handleProjectSelect(project?.name);
+  }, [project]);
 
   const value: ProjectContextType = {
     projects,
@@ -249,7 +237,6 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     selectedFile,
     searchQuery,
     searchResults,
-    sidebarOpen,
     isSyncing,
     copied,
     stats,
@@ -260,7 +247,6 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     setSelectedProject,
     setSelectedFile,
     setSearchQuery,
-    setSidebarOpen,
     setIsSyncing,
     setCopied,
     setIsOpenApiKeyModal,

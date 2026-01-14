@@ -126,7 +126,7 @@ class FileService {
       const file = project.files.find((f) => f.fullPath === fileData.path);
 
       if (!file) return;
-
+      const io = getIO();
       const changed = hasFileChanged(file, fileData);
       if (changed) {
         console.log(`🔄 File change detected for path: ${file.path}`);
@@ -146,16 +146,15 @@ class FileService {
           relativePath,
           content: file.content,
         });
-
-        const io = getIO();
-        io.emit("fileUpdated", {
-          project: project.name,
-          path: file.path,
-          content: fileData.content,
-          size: fileData.size,
-          lastModified: fileData.lastModified,
-        });
       }
+
+      io.emit("fileUpdated", {
+        project: project.name,
+        path: file.path,
+        content: fileData.content,
+        size: fileData.size,
+        lastModified: fileData.lastModified,
+      });
     });
   }
 

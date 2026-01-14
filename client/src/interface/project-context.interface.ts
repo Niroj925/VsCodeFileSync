@@ -15,7 +15,6 @@ export interface ProjectContextType {
   selectedFile: FileContent | null;
   searchQuery: string;
   searchResults: SearchResult[];
-  sidebarOpen: boolean;
   isSyncing: boolean;
   copied: boolean;
   stats: ReturnType<typeof useStats>["stats"];
@@ -26,7 +25,6 @@ export interface ProjectContextType {
   setSelectedProject: React.Dispatch<React.SetStateAction<string>>;
   setSelectedFile: React.Dispatch<React.SetStateAction<FileContent | null>>;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
-  setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setIsSyncing: React.Dispatch<React.SetStateAction<boolean>>;
   setCopied: React.Dispatch<React.SetStateAction<boolean>>;
   setIsOpenApiKeyModal: React.Dispatch<React.SetStateAction<boolean>>;

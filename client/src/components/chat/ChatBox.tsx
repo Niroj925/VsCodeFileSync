@@ -10,7 +10,6 @@ const ChatBox: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatResponse]);
 
-  // Helper to render chat blocks
   const renderChatBlocks = (blocks: any[]) => {
     return blocks.map((block, blockIndex) => {
       switch (block.type) {
