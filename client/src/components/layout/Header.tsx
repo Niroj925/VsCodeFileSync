@@ -36,7 +36,7 @@ const Header: React.FC = () => {
 
   const [projectStatus, setProjectStatus] = useState<ProjectStatus>("idle");
   const [projectName, setProjectName] = useState(unsavedProject?.name);
-
+  
   const handleSave = () => {
     if (!model.trim()) return;
     saveModel(provider, model);

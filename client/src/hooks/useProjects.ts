@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { projectService } from '../services/projectService';
 import type { FileItem, Project } from '../types';
+import { fileService } from '../services/fileService';
 
 interface UseProjectsReturn {
   project: Project | null;
@@ -44,7 +45,7 @@ export const useProject = (): UseProjectsReturn => {
     async (projectName: string): Promise<FileItem[]> => {
       try {
         setLoading(true);
-        const files = await projectService.getProjectFiles(projectName);
+        const files = await fileService.getProjectFiles(projectName);
         setError(null);
         return files;
       } catch (err: any) {

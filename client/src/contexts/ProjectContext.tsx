@@ -8,8 +8,7 @@ import React, {
 } from "react";
 import debounce from "lodash.debounce";
 import { useProject } from "../hooks/useProjects";
-import { useFileSearch } from "../hooks/useFileSearch";
-import { useStats } from "../hooks/useStats";
+import { useFile } from "../hooks/useFile";
 import type {
   FileContent,
   FileTreeNode,
@@ -73,8 +72,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     searchFiles,
     loadFileContent,
     setSearchResults,
-  } = useFileSearch();
-  const { stats, calculateStats } = useStats(projects);
+  } = useFile();
  
   const debouncedLoadProjects = useRef(
     debounce(async () => {
@@ -82,9 +80,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     }, 300)
   ).current;
 
-  const debouncedLoadStats = useRef(
-    debounce(() => calculateStats(), 300)
-  ).current;
+
 
   const buildFileTree = useCallback(
     (files: SearchResult[], projectName: string): FileTreeNode => {
@@ -239,7 +235,6 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     searchResults,
     isSyncing,
     copied,
-    stats,
     loading: projectsLoading || searchLoading,
     isOpenApiKeyModal,
     isOpenProviderModal,
@@ -259,7 +254,6 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({
     copyToClipboard,
     loadProjectFiles,
     debouncedLoadProjects: debouncedLoadProjects as any,
-    debouncedLoadStats: debouncedLoadStats as any,
 
     fileTree,
     expandedFolders,

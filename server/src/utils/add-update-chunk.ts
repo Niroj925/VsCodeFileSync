@@ -43,6 +43,9 @@ export async function addUpdateChunk(chunks: ChunkData[]) {
     let createdCount = 0;
     let updatedCount = 0;
 
+    console.log('existing length:',storedData.chunks.length);
+    console.log('new chunks length:',chunks.length);
+
     for (const newChunk of chunks) {
       const key = `${newChunk.filePath}::${newChunk.symbol}`;
       const existingIndex = existingMap.get(key);

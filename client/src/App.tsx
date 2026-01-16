@@ -13,7 +13,6 @@ const AppContent: React.FC = () => {
   const {
     selectedFile,
     debouncedLoadProjects,
-    debouncedLoadStats,
     setSelectedFile,
     setSocketConnected,
   } = useProjectContext();
@@ -32,7 +31,6 @@ const AppContent: React.FC = () => {
 
       case "projectSynced":
         debouncedLoadProjects();
-        debouncedLoadStats();
         break;
 
       case "fileUpdated":
@@ -51,7 +49,6 @@ const AppContent: React.FC = () => {
           }));
         }
         debouncedLoadProjects();
-        debouncedLoadStats();
         break;
 
       case "fileDeleted":
@@ -64,13 +61,11 @@ const AppContent: React.FC = () => {
           setSelectedFile(null);
         }
         debouncedLoadProjects();
-        debouncedLoadStats();
         break;
 
       case "folderCreated":
       case "folderDeleted":
         debouncedLoadProjects();
-        debouncedLoadStats();
         break;
     }
   });

@@ -31,7 +31,7 @@ export const api = {
   },
 
   patch: async <T>(url: string, data?: any, config?: any): Promise<T> => {
-    const res: AxiosResponse<T> = await instance.put(url, data, config);
+    const res: AxiosResponse<T> = await instance.patch(url, data, config);
     return res.data;
   },
 

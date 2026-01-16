@@ -93,6 +93,36 @@ export const updateFile = (req: Request, res: Response): void => {
   }
 };
 
+export const keepChange = (req: Request, res: Response): void => {
+  try {
+    const { path: filePath, content } = req.body;
+
+    if (!filePath || content === undefined) {
+      res.status(400).json({ 
+        success: false, 
+        error: "Path and content are required" 
+      });
+      return;
+    }
+
+    fileService.keepChange({ 
+      path: filePath, 
+      content,
+    });
+
+    res.json({ 
+      success: true,
+      message: "changers updated successfully"
+    });
+  } catch (error) {
+    console.error("Update file error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
 export const deleteFile = (req: Request, res: Response): void => {
   try {
     const { path: filePath } = req.body;
@@ -123,7 +153,6 @@ export const deleteFile = (req: Request, res: Response): void => {
 export const getFileContent = (req: Request, res: Response): void => {
   try {
     const { project, filePath } = req.query;
-
     if (!project || !filePath) {
       res.status(400).json({ 
         success: false, 

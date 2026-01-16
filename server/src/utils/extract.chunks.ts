@@ -22,7 +22,7 @@ export async function extractChunksFromFiles(
   projectName: string
 ): Promise<ChunkData[]> {
   const chunks: ChunkData[] = [];
-
+console.log('src directory:',srcFolder)
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: {

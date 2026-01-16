@@ -1,4 +1,4 @@
-import type { useStats } from "../hooks/useStats";
+
 import type {
   FileContent,
   FileTreeNode,
@@ -17,7 +17,6 @@ export interface ProjectContextType {
   searchResults: SearchResult[];
   isSyncing: boolean;
   copied: boolean;
-  stats: ReturnType<typeof useStats>["stats"];
   loading: boolean;
   isOpenApiKeyModal: boolean;
   isOpenProviderModal: boolean;
@@ -37,7 +36,6 @@ export interface ProjectContextType {
   copyToClipboard: (text: string) => void;
   loadProjectFiles: (projectName: string) => Promise<SearchResult[]>;
   debouncedLoadProjects: () => void;
-  debouncedLoadStats: () => void;
 
   fileTree: Record<string, FileTreeNode>;
   expandedFolders: Set<string>;

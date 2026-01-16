@@ -5,6 +5,7 @@ import path from "path";
 import { saveProjectDirectory } from "../utils/store-directory";
 import { hasFileChanged } from "../utils/check-file-change.utils";
 import { updateFileChunks } from "../utils/extract-update-file.chunks";
+import { getSavedProject } from "../utils/get-project";
 
 class FileService {
   private projects: Record<string, Project> = {};
@@ -158,6 +159,18 @@ class FileService {
     });
   }
 
+  keepChange(fileData: { path: string; content: string }): boolean {
+    const project = getSavedProject();
+    if (!project?.name) return false;
+
+    const oldFileContent =
+      project.files.find((f) => f.path === fileData.path) || null;
+    console.log(
+      `file path:${fileData.path}\n ,new content:${fileData?.content},\n old content:${oldFileContent?.content}`
+    );
+    return true;
+  }
+
   deleteFile(filePath: string): void {
     Object.values(this.projects).forEach((project) => {
       project.files = project.files.filter((f) => f.fullPath !== filePath);
@@ -172,9 +185,11 @@ class FileService {
 
   getFile(projectName: string, filePath: string): FileData | null {
     const project = this.getProject(projectName);
-    if (!project) return null;
-
-    return project.files.find((f) => f.path === filePath) || null;
+    if (!project)  {
+      throw new Error('Project not found')
+    };
+    const file= project.files.find((f) => f.fullPath === filePath) || null;
+    return file
   }
 
   searchFiles(query: string, projectName?: string): Array<any> {

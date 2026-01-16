@@ -2,7 +2,6 @@ import { Router } from "express";
 import {
   syncProject,
   getProjects,
-  getProjectFiles,
   saveKey,
   saveCurrentModel,
   getCurrentModel,
@@ -23,6 +22,5 @@ router.get("/get-model", getCurrentModel);
 router.get("/all", getProjects);
 router.get("/unsaved", getProject);
 router.get("/", getSyncedProject);
-router.get("/:projectName/files", getProjectFiles);
 
 export default router;

@@ -1,5 +1,5 @@
 import type { CurrentModel } from "../interface";
-import type { FileContent, FileItem, Project, SearchResult } from "../types";
+import type { FileItem, Project } from "../types";
 import api from "./api";
 
 export const projectService = {
@@ -23,27 +23,6 @@ export const projectService = {
       `/api/project/${projectName}/files`
     );
     return data.files;
-  },
-
-  searchFiles: async (query: string, project = ""): Promise<SearchResult[]> => {
-    const params: Record<string, string> = { query };
-    if (project) params.project = project;
-
-    const data = await api.get<{ results: SearchResult[] }>("/api/search", {
-      params,
-    });
-
-    return data.results;
-  },
-
-  getFileContent: async (
-    project: string,
-    filePath: string
-  ): Promise<FileContent> => {
-    const data = await api.get<{ file: FileContent }>("/api/file/content", {
-      params: { project, filePath },
-    });
-    return data.file;
   },
 
   syncProject: async (projectName: string): Promise<void> => {

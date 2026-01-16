@@ -24,7 +24,6 @@ export const syncProject = async (req: Request, res: Response) => {
       return;
     }
     const existingProject=getSavedProject();
-    console.log('existing project:',existingProject)
     fileService.syncProject(projectName, files, srcFolder);
     const extractedChunk = await extractChunksFromFiles(
       files,

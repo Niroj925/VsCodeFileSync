@@ -194,7 +194,7 @@ class EmbeddingService {
     }
   }
 
-  async getServerChunks(limit = 10, offset?: string) {
+  async getServerChunks(limit = 100, offset?: string) {
     try {
       const project = getSavedProject();
       if (!project?.name) return null;
