@@ -28,7 +28,7 @@ export function saveProjectDirectory(project: Project) {
 
     jsonData.project = {
       name: project.name,
-      projectDirectory: project.srcFolder,
+      projectDirectory: project.projectDirectory,
       lastSynced: project.lastSynced
     };
 

@@ -8,7 +8,7 @@ export interface FileData {
 
 export interface Project {
   name: string;
-  srcFolder: string;
+  projectDirectory: string;
   files: FileData[];
   lastSynced: Date;
 }
@@ -28,7 +28,7 @@ export interface ChatResponse {
 export interface SyncRequest {
   projectName: string;
   files: FileData[];
-  srcFolder: string;
+  path: string;
 }
 
 export interface SearchResult {
@@ -66,13 +66,6 @@ export interface FileData {
   content: string;
   size: number;
   lastModified: Date;
-}
-
-export interface Project {
-  name: string;
-  srcFolder: string;
-  files: FileData[];
-  lastSynced: Date;
 }
 
 // Chat/LMM types
@@ -133,7 +126,7 @@ export type StoredData = {
 
 export type UpdateFileChunkInput = {
   projectName: string;
-  srcFolder: string;
+  projectDirectory: string;
   filePath: string;
   relativePath: string;
   content: string;

@@ -13,7 +13,7 @@ function isSameChunkContent(a: ChunkData, b: ChunkData): boolean {
 
 export async function updateFileChunks({
   projectName,
-  srcFolder,
+  projectDirectory,
   filePath,
   relativePath,
   content,
@@ -41,7 +41,7 @@ export async function updateFileChunks({
 
   const newFileChunks =await extractChunksFromFiles(
     [{ path: relativePath, content }],
-    srcFolder,
+    projectDirectory,
     projectName
   );
 

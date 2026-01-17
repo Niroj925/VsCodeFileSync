@@ -21,7 +21,7 @@ export function getSavedProject(): Project | null {
 
     const project: Project = {
       name: jsonData.project.name,
-      srcFolder: jsonData.project.projectDirectory,
+      projectDirectory: jsonData.project.projectDirectory,
       files: jsonData.project.files ?? [],
       lastSynced: new Date(jsonData.project.lastSynced),
     };

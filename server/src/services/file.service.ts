@@ -1,11 +1,13 @@
 import { FileData, Project } from "../types";
 import { getIO } from "../socket";
 import path from "path";
+import fs from "fs";
 
 import { saveProjectDirectory } from "../utils/store-directory";
 import { hasFileChanged } from "../utils/check-file-change.utils";
 import { updateFileChunks } from "../utils/extract-update-file.chunks";
 import { getSavedProject } from "../utils/get-project";
+import smartMerge from "../utils/file-content";
 
 class FileService {
   private projects: Record<string, Project> = {};
@@ -14,11 +16,11 @@ class FileService {
   syncProject(
     projectName: string,
     files: FileData[],
-    srcFolder: string
+    projectPath: string
   ): Project {
     const project: Project = {
       name: projectName,
-      srcFolder,
+      projectDirectory: projectPath,
       files,
       lastSynced: new Date(),
     };
@@ -138,11 +140,11 @@ class FileService {
 
         this.updateFileIndex(project.name, project.files);
 
-        const relativePath = path.relative(project.srcFolder, file.path);
+        const relativePath = path.relative(project.projectDirectory, file.path);
 
         updateFileChunks({
           projectName: project.name,
-          srcFolder: project.srcFolder,
+          projectDirectory: project.projectDirectory,
           filePath: file.path,
           relativePath,
           content: file.content,
@@ -159,18 +161,6 @@ class FileService {
     });
   }
 
-  keepChange(fileData: { path: string; content: string }): boolean {
-    const project = getSavedProject();
-    if (!project?.name) return false;
-
-    const oldFileContent =
-      project.files.find((f) => f.path === fileData.path) || null;
-    console.log(
-      `file path:${fileData.path}\n ,new content:${fileData?.content},\n old content:${oldFileContent?.content}`
-    );
-    return true;
-  }
-
   deleteFile(filePath: string): void {
     Object.values(this.projects).forEach((project) => {
       project.files = project.files.filter((f) => f.fullPath !== filePath);
@@ -185,11 +175,16 @@ class FileService {
 
   getFile(projectName: string, filePath: string): FileData | null {
     const project = this.getProject(projectName);
-    if (!project)  {
-      throw new Error('Project not found')
-    };
-    const file= project.files.find((f) => f.fullPath === filePath) || null;
-    return file
+    if (!project) {
+      throw new Error("Project not found");
+    }
+    const savedProject = getSavedProject();
+    const fullPath = `${savedProject?.projectDirectory?.replace(
+      /\/$/,
+      ""
+    )}/${filePath.replace(/^\//, "")}`;
+    const file = project.files.find((f) => f.fullPath === fullPath) || null;
+    return file;
   }
 
   searchFiles(query: string, projectName?: string): Array<any> {
@@ -243,6 +238,42 @@ class FileService {
 
     return snippet;
   }
+
+  async keepChange(fileData: {
+    path: string;
+    content: string;
+  }): Promise<Boolean> {
+    const projectInfo = getSavedProject();
+    if (!projectInfo?.name) return false;
+
+    const project = this.getProject(projectInfo?.name);
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    const oldFile = project.files.find((f) => f.fullPath === fileData.path);
+    if (!oldFile) {
+      // If file doesn't exist, just add it as new
+      // project.files.push({
+      //   fullPath: fileData.path,
+      //   content: fileData.content,
+      // });
+      return false;
+    }
+
+    // Merge the changes intelligently
+    const mergedContent =smartMerge(oldFile.content, fileData.content);
+    console.log("merged content:", mergedContent);
+    // Update the file content
+    oldFile.content = mergedContent;
+
+    console.log(`File updated: ${fileData.path}`);
+    await fs.promises.writeFile(fileData.path, mergedContent, "utf8");
+
+    console.log(`File updated: ${fileData.path}`);
+    return true;
+  }
+
 }
 
 export default new FileService();

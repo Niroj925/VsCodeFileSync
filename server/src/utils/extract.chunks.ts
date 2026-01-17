@@ -18,11 +18,10 @@ type ChunkData = {
 
 export async function extractChunksFromFiles(
   files: IncomingFile[],
-  srcFolder: string,
+  projectPath: string,
   projectName: string
 ): Promise<ChunkData[]> {
   const chunks: ChunkData[] = [];
-console.log('src directory:',srcFolder)
   const project = new Project({
     useInMemoryFileSystem: true,
     compilerOptions: {
@@ -32,7 +31,7 @@ console.log('src directory:',srcFolder)
   });
 console.log('files length:', files.length); 
   for (const file of files) {
-    const fullPath = path.join(srcFolder, file.path);
+    const fullPath = path.join(projectPath, file.path);
     try {
       project.createSourceFile(fullPath, file.content, {
         overwrite: true,

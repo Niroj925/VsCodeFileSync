@@ -15,22 +15,23 @@ import { EmbedUpdateChunk } from "../utils/embed-update-chunk";
 
 export const syncProject = async (req: Request, res: Response) => {
   try {
-    const { projectName, files, srcFolder } = req.body;
-    if (!projectName || !files || !srcFolder) {
+    const { projectName, files, path } = req.body;
+    if (!projectName || !files || !path) {
+      
       res.status(400).json({
         success: false,
-        error: "Project name, files, and srcFolder are required",
+        error: "Project name, files, and path are required",
       });
       return;
     }
     const existingProject=getSavedProject();
-    fileService.syncProject(projectName, files, srcFolder);
+    fileService.syncProject(projectName, files, path);
     const extractedChunk = await extractChunksFromFiles(
       files,
-      srcFolder,
+      path,
       projectName
     );
-    const project = await checkProjectExist(projectName, srcFolder);
+    const project = await checkProjectExist(projectName, path);
 
     if (project.exist) {
       console.log("this project already embeded");
