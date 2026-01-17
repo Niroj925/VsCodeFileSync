@@ -51,14 +51,12 @@ async function initialProjectSync(context) {
       async () => {
         const files = collectFiles(WORKSPACE_PATH, WORKSPACE_PATH);
         
-        // NEW: Get project name from workspace folder
         const projectName = path.basename(WORKSPACE_PATH);
         
-        // NEW: Updated endpoint and payload structure
         await axios.post(`${BACKEND_URL}/api/project/sync`, {
           projectName: projectName,
           files: files,
-          srcFolder: WORKSPACE_PATH
+          path: WORKSPACE_PATH
         });
 
         vscode.window.showInformationMessage(
