@@ -18,13 +18,6 @@ export const projectService = {
     return data.project;
   },
 
-  getProjectFiles: async (projectName: string): Promise<FileItem[]> => {
-    const data = await api.get<{ files: FileItem[] }>(
-      `/api/project/${projectName}/files`
-    );
-    return data.files;
-  },
-
   syncProject: async (projectName: string): Promise<void> => {
     await api.post<void>("/api/project/sync", { projectName });
   },

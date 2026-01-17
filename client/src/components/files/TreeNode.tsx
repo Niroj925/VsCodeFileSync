@@ -27,7 +27,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level }) => {
 
   const key = `${node.project}/${node.path}`;
   const isOpen = expandedFolders.has(key);
-
   const isAdded = selectedItems.some(
     (f) => f.project === node.project && f.path === node.path
   );
