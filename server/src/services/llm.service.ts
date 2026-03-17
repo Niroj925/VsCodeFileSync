@@ -1,12 +1,11 @@
 // llm.service.ts - Updated with correct parsing
-import { ChatBlock, ChatRequest, ChunkData, LLMResponse } from "../types";
+import { ChatBlock, ChatRequest, LLMResponse } from "../types";
 import { OpenAIProvider } from "../providers/openai.provider";
 import { GeminiProvider } from "../providers/gemini.provider";
 import { DeepSeekProvider } from "../providers/deepseek.provider";
 import llmConfig from "../config/llm-config";
 import { formatedPrompt, formatPrompt } from "../utils/prompt.utils";
 import { getLanguageFromPath } from "../utils/helpers";
-import embeddingService from "./embedding.service";
 
 class LLMService {
   private providers = new Map<string, any>();
@@ -82,52 +81,6 @@ class LLMService {
         providerName,
         model,
         rawResponse // Only LLM response here
-      );
-    } catch (error) {
-      console.error("LLM processing error:", error);
-      throw error;
-    }
-  }
-
-  async processQuery(query: string): Promise<LLMResponse> {
-    try {
-      console.log('query:',query)
-      const current = llmConfig.getCurrentProvider();
-      const providerName = current.provider;
-      const model = current.model;
-      const provider = this.providers.get(providerName);
-
-      if (!provider) {
-        throw new Error(`Provider "${providerName}" is not configured`);
-      }
-
-      console.log(`Using LLM Provider: ${providerName} with model ${model}`);
-
-      const relevantChunks = await embeddingService.searchRelevantChunks(query);
-      const filesWithContent = relevantChunks.map((chunk) => {
-        return {
-          symbol: chunk.symbol,
-          type: chunk.type,
-          score: chunk.score,
-          filePath: chunk.filePath,
-          content: chunk.content,
-        };
-      });
-      console.log('files content length:',filesWithContent.length)
-      const prompt = formatedPrompt(query, filesWithContent);
-
-      const rawResponse: string = await provider.sendMessage({
-        prompt,
-        model,
-      });
-
-      // console.log("raw response:", rawResponse);
-
-      return this.formatResponse(
-        query,
-        providerName,
-        model,
-        rawResponse 
       );
     } catch (error) {
       console.error("LLM processing error:", error);

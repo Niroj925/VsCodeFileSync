@@ -5,46 +5,26 @@ import { saveCurrentModelProvider } from "../utils/store-current-model";
 import { getCurrentModelProvider } from "../utils/get-current-model";
 import { getModelsByProvider, saveModel } from "../utils/store-provider-models";
 import llmConfig from "../config/llm-config";
-import { extractChunksFromFiles } from "../utils/extract.chunks";
-import { embedProjectChunks } from "../utils/embedding";
-import { checkProjectExist } from "../utils/check-project-embed";
 import { getSavedProject } from "../utils/get-project";
 import { getIO } from "../socket";
-import { addUpdateChunk } from "../utils/add-update-chunk";
-import { EmbedUpdateChunk } from "../utils/embed-update-chunk";
 
 export const syncProject = async (req: Request, res: Response) => {
   try {
     const { projectName, files, path } = req.body;
     if (!projectName || !files || !path) {
-      
       res.status(400).json({
         success: false,
         error: "Project name, files, and path are required",
       });
       return;
     }
-    const existingProject=getSavedProject();
-    fileService.syncProject(projectName, files, path);
-    const extractedChunk = await extractChunksFromFiles(
-      files,
-      path,
-      projectName
-    );
-    const project = await checkProjectExist(projectName, path);
 
-    if (project.exist) {
-      console.log("this project already embeded");
-     existingProject?.name==projectName? await addUpdateChunk(extractedChunk):await EmbedUpdateChunk(extractedChunk);
-    } else {
-      console.log("embedding method call");
-      await embedProjectChunks();
-    }
+    fileService.syncProject(projectName, files, path);
 
     const io = getIO();
-    io.emit("projectEmbeded", {
+    io.emit("projectSynced", {
       success: true,
-      message: "Project synced and embedded.",
+      message: "Project synced successfully.",
       projectName,
     });
 

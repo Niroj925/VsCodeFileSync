@@ -4,8 +4,6 @@ import path from "path";
 import fs from "fs";
 
 import { saveProjectDirectory } from "../utils/store-directory";
-import { hasFileChanged } from "../utils/check-file-change.utils";
-import { updateFileChunks } from "../utils/extract-update-file.chunks";
 import { getSavedProject } from "../utils/get-project";
 import smartMerge from "../utils/file-content";
 
@@ -129,28 +127,14 @@ class FileService {
       const file = project.files.find((f) => f.fullPath === fileData.path);
 
       if (!file) return;
+      
+      file.content = fileData.content;
+      file.size = fileData.size;
+      file.lastModified = fileData.lastModified;
+
+      this.updateFileIndex(project.name, project.files);
+
       const io = getIO();
-      const changed = hasFileChanged(file, fileData);
-      if (changed) {
-        console.log(`🔄 File change detected for path: ${file.path}`);
-
-        file.content = fileData.content;
-        file.size = fileData.size;
-        file.lastModified = fileData.lastModified;
-
-        this.updateFileIndex(project.name, project.files);
-
-        const relativePath = path.relative(project.projectDirectory, file.path);
-
-        updateFileChunks({
-          projectName: project.name,
-          projectDirectory: project.projectDirectory,
-          filePath: file.path,
-          relativePath,
-          content: file.content,
-        });
-      }
-
       io.emit("fileUpdated", {
         project: project.name,
         path: file.path,

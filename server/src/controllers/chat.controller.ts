@@ -4,7 +4,6 @@ import path from "path";
 import fs from "fs-extra";
 import { getStoredProjectDirectory } from "../utils/get-directory";
 import llmService from "../services/llm.service";
-import { getOpenaiKey } from "../utils/get-openai-key";
 
 export const sendChat = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -86,27 +85,6 @@ export const sendChat = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({
       success: false,
       error: err instanceof Error ? err.message : "Unknown error",
-    });
-  }
-};
-
-export const sendQuery = async (req: Request, res: Response): Promise<void> => {
-  const { query } = req.body;
-  try {
-    const { key } = getOpenaiKey();
-    if (!key) {
-      throw new Error("OpenAI API key missing for embeddings.");
-    }
-    const llmResponse = await llmService.processQuery(query);
-    // console.log("LLM Response:", llmResponse);
-    res.json(llmResponse);
-  } catch (err) {
-    console.error("LLM processing error:", err);
-    res.json({
-      success: false,
-      error: {
-        message: err instanceof Error ? err.message : "Unknown LLM error",
-      },
     });
   }
 };
